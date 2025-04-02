@@ -1,29 +1,57 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as yup from 'yup';
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import logoCompleto from './../img/LogoCompleto.png';
 
 export default function Form() {
     const navigate = useNavigate();
-
-    function onSubmit(data) {
-        if (data.email === "admin@gmail.com" && data.password === "1234") {
-            return navigate(`/Home`);
-        }
-        return alert("Contraseña incorrecta");
-    }
-
+    const [isLoading, setIsLoading] = useState(false);
+    const [loginError, setLoginError] = useState('');
+    
     const schema = yup.object().shape({
         email: yup.string().required("Ingresa un email").email("Ingresa un email válido"),
         password: yup.string().required("Ingresa una contraseña").min(4, "Mínimo 4 caracteres"),
     });
-
+    
     const { register, handleSubmit, formState: { errors } } = useForm({ resolver: yupResolver(schema) });
-
+    
+    async function onSubmit(data) {
+        setIsLoading(true);
+        setLoginError('');
+        
+        try {
+            // API call to login endpoint
+            const response = await axios.post('http://localhost:8080/auth/login', {
+                username: data.email,
+                password: data.password
+            }, {
+                headers: { 
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            // Store token in localStorage for future API calls
+            localStorage.setItem('authToken', response.data.token);
+            
+            // Set token as default Authorization header for future requests
+            axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+            
+            // Navigate to home page after successful login
+            navigate('/Home');
+            
+        } catch (error) {
+            console.error("Login error:", error);
+            setLoginError(error.response?.data?.message || 'Credenciales incorrectas');
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    
     return (
-        <div className=" vh-100 d-flex align-items-center justify-content-center" style={{backgroundColor:'#9B1C31'}}>
+        <div className="vh-100 d-flex align-items-center justify-content-center" style={{backgroundColor:'#9B1C31'}}>
             <div className="row text-light rounded shadow-lg overflow-hidden" style={{backgroundColor:'#FFF'}} >
                 {/* Imagen */}
                 <div className="col-md-6 p-4 d-flex align-items-center justify-content-center " style={{backgroundColor:'#FFF'}}>
@@ -35,7 +63,7 @@ export default function Form() {
                     <h3 className="text-center mb-4" style={{color:'#000'}}>SIGERP RESTAURANTE</h3>
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <div className="mb-3">
-                            <label htmlFor="email" className="form-label"  style={{color:'#000'}}>Correo:</label>
+                            <label htmlFor="email" className="form-label" style={{color:'#000'}}>Correo:</label>
                             <input
                                 id="email"
                                 type="text"
@@ -46,7 +74,7 @@ export default function Form() {
                             {errors.email && <div className="text-warning small">{errors.email.message}</div>}
                         </div>
                         <div className="mb-3">
-                            <label htmlFor="password" className="form-label " style={{color:'#000'}}>Contraseña:</label>
+                            <label htmlFor="password" className="form-label" style={{color:'#000'}}>Contraseña:</label>
                             <input
                                 id="password"
                                 type="password"
@@ -56,11 +84,13 @@ export default function Form() {
                             />
                             {errors.password && <div className="text-warning small">{errors.password.message}</div>}
                         </div>
+                        {loginError && <div className="alert alert-danger">{loginError}</div>}
                         <button
                             type="submit"
                             className="btn btn-light w-100 fw-bold bg-danger text-light"
+                            disabled={isLoading}
                         >
-                            Continuar
+                            {isLoading ? 'Cargando...' : 'Continuar'}
                         </button>
                     </form>
                 </div>

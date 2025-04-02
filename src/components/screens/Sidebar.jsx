@@ -30,7 +30,7 @@ function Sidebar() {
         <h4 className="text-center">RESTAURANT</h4>
         <hr />
       </div>
-      <ul className="nav nav-pills flex-column mb-auto">
+      <ul className="nav nav-pills flex-column mb-auto" style={{fontSize: 20}}>
         <li>
           <Link
             to="/home"

@@ -22,7 +22,7 @@ function AdminPanel() {
           <h3>Panel de Administración</h3>
           <button className="btn btn-danger">PDF</button>
         </div>
-
+        <hr/>
         {/* Chart Section */}
         <div className="d-flex justify-content-between mt-4">
           <div className="p-3 rounded mt-3">
