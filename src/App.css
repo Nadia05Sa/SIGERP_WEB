@@ -12,6 +12,11 @@
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
+.table-row:hover {
+  transform: scale(1.01);
+  transition: transform 0.2s ease-in-out;
+}
+
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);

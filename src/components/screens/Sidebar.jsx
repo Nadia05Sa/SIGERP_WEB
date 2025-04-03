@@ -7,12 +7,13 @@ import Home from './../img/home.png';
 import menu from './../img/menu.png';
 import mesa from './../img/mesas.png';
 import reseñas from './../img/reseña.png';
+import logo from './../img/LogoBlanco.png';
 
 function Sidebar() {
   const location = useLocation(); // Obtén la ruta actual
 
   // Función para determinar si la ruta está activa
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => location.pathname === path || (location.pathname === '' && path === '/home');
 
   return (
     <div
@@ -20,14 +21,17 @@ function Sidebar() {
       style={{
         width: '250px',
         height: '100vh', // Ocupa toda la altura de la ventana
-        backgroundColor: '#9B1C31',
+        backgroundColor: '#a4113a', // Color de fondo del Sidebar
         position: 'fixed', // Fija el Sidebar en la página
         top: 0,
         left: 0,
       }}
     >
       <div className="pt-3 px-3">
-        <h4 className="text-center">RESTAURANT</h4>
+        <div className='d-flex justify-content-center align-items-end'>
+          <img src={logo} alt='Logo' style={{width:50}}/>
+          <h4 className="text-center">RESTAURANT</h4>
+        </div>
         <hr />
       </div>
       <ul className="nav nav-pills flex-column mb-auto" style={{fontSize: 20}}>

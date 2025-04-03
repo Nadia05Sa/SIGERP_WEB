@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import '../../App.css'
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Button, Modal, Form, Table, InputGroup } from "react-bootstrap";
@@ -179,7 +180,7 @@ function GestionMesas() {
           <tbody>
             {filteredMesas.length > 0 ? (
               filteredMesas.map((mesa) => (
-                <tr key={mesa.id}>
+                <tr key={mesa.id} className="table-row">
                   <td>
                     <img src={mesa.imagen || "https://placehold.co/100x100.png"} alt={mesa.nombre} className="rounded" width="50" />
                   </td>

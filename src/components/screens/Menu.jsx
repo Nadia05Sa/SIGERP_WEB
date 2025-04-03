@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import '../../App.css'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Modal, Button, Form, Table, InputGroup } from 'react-bootstrap';
 import { FaSearch } from 'react-icons/fa';
@@ -335,7 +336,7 @@ function Menu() {
           </thead>
           <tbody>
             {filteredMenu.map((item) => (
-              <tr key={item.id}>
+              <tr key={item.id} className="table-row">
                 <td>
                   <img 
                     src={item.imagen || "https://placehold.co/100x100.png"} 

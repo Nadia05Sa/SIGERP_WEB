@@ -5,6 +5,7 @@ import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import axios from 'axios';
 import { FaSearch } from 'react-icons/fa';
+import '../../App.css'
 
 // API endpoints
 const API_URL = 'http://localhost:8080/api/empleado';
@@ -362,7 +363,7 @@ const EmpleadoForm = () => {
                 </thead>
                 <tbody>
                     {filteredMeseros.map((mesero, index) => (
-                        <tr key={index}>
+                        <tr key={index} className="table-row">
                             <td>
                                 <Image 
                                     src={getImageToDisplay(mesero)} 

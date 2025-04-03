@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import '../../App.css'
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Sidebar from './Sidebar';
@@ -267,7 +268,7 @@ function Categorias() {
         <tbody>
           {filteredCategorias.length > 0 ? (
             filteredCategorias.map((categoria) => (
-              <tr key={categoria.id}>
+              <tr key={categoria.id} className="table-row">
                 <td>
                   <img 
                     src={categoria.imagen || "https://placehold.co/100x100.png"} 

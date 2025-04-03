@@ -3,6 +3,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import Sidebar from './Sidebar'; // Importa el Sidebar
 import ReactStars from 'react-rating-stars-component'; // Componente para mostrar estrellas
 import { VictoryBar } from 'victory'; // Para la gráfica de barras
+import '../../App.css'
 
 const reseñas = [
   {
@@ -58,7 +59,7 @@ function Reseñas() {
         {/* Lista de reseñas individuales */}
         <div className="mt-4">
           {reseñas.map((reseña, index) => (
-            <div key={index} className="mb-4 border p-3 rounded">
+            <div key={index} className="mb-4 border p-3 rounded table-row">
               <h5>{reseña.nombre}</h5>
               <ReactStars value={reseña.calificacion} size={20} edit={false} />
               <p>{reseña.comentario}</p>
