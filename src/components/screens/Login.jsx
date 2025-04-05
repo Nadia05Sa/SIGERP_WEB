@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import * as yup from 'yup';
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -10,18 +10,24 @@ export default function Form() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [loginError, setLoginError] = useState('');
-    
+
+    // Invalidar el token al cargar el componente
+    useEffect(() => {
+        localStorage.removeItem('authToken'); // Elimina el token
+        localStorage.removeItem('refreshToken'); // Opcional: elimina el refresh token si lo usas
+    }, []);
+
     const schema = yup.object().shape({
         email: yup.string().required("Ingresa un email").email("Ingresa un email válido"),
         password: yup.string().required("Ingresa una contraseña").min(4, "Mínimo 4 caracteres"),
     });
-    
+
     const { register, handleSubmit, formState: { errors } } = useForm({ resolver: yupResolver(schema) });
-    
+
     async function onSubmit(data) {
         setIsLoading(true);
         setLoginError('');
-        
+
         try {
             // API call to login endpoint
             const response = await axios.post('http://localhost:8080/auth/login', {
@@ -32,16 +38,16 @@ export default function Form() {
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             // Store token in localStorage for future API calls
             localStorage.setItem('authToken', response.data.token);
-            
+
             // Set token as default Authorization header for future requests
             axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-            
+
             // Navigate to home page after successful login
             navigate('/Home');
-            
+
         } catch (error) {
             console.error("Login error:", error);
             setLoginError(error.response?.data?.message || 'Credenciales incorrectas');
@@ -49,7 +55,7 @@ export default function Form() {
             setIsLoading(false);
         }
     }
-    
+
     return (
         <div className="vh-100 d-flex align-items-center justify-content-center" style={{backgroundColor:'#9B1C31'}}>
             <div className="row text-light rounded shadow-lg overflow-hidden" style={{backgroundColor:'#FFF'}} >

@@ -1,159 +1,171 @@
-import React, { useState, useEffect } from "react";
-import '../../App.css'
-import axios from "axios";
+import React, { useEffect, useState } from "react";
+import "../../App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Button, Modal, Form, Table, InputGroup } from "react-bootstrap";
+import { Button, Form, InputGroup } from "react-bootstrap";
 import { FaSearch } from "react-icons/fa";
-import * as yup from "yup";
-import { useForm } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import Sidebar from "./Sidebar";
+import axios from "axios";
+import MesaList from "./mesas/MesaList";
+import MesaForm from "./mesas/MesaForm";
+import MesaDetail from "./mesas/MesaDetail";
 import authService from "../../service/authService";
 
 const API_URL = "http://localhost:8080/api/mesas";
 
-// Esquema de validación con Yup
-const schema = yup.object().shape({
-  img: yup
-    .mixed()
-    .required('La imagen es obligatoria')
-    .test('fileSize', 'El archivo es muy grande (máx. 2MB)', (value) => 
-      value && value[0] && value[0].size <= 2000000
-    )
-    .test('fileType', 'Formato no soportado (solo JPG/PNG)', (value) =>
-      value && value[0] && ['image/jpeg', 'image/png', 'image/jpg'].includes(value[0].type)
-    ),
-  mesa: yup.string().required('El nombre de la mesa es obligatorio').min(3, 'Debe tener al menos 3 caracteres'),
-  capacidad: yup
-    .number()
-    .typeError('Debe ser un número')
-    .required('La capacidad es obligatoria')
-    .min(1, 'Debe ser al menos 1 persona')
-    .max(20, 'Máximo 20 personas'),
-  estado: yup.string().required('El estado es obligatorio'),
-});
-
 function GestionMesas() {
   const [mesasData, setMesasData] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  const { register, handleSubmit, formState: { errors }, reset } = useForm({
-    resolver: yupResolver(schema)
-  });
+  const [showDetailView, setShowDetailView] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [currentMesa, setCurrentMesa] = useState(null);
+  const [authToken, setAuthToken] = useState("");
 
-  // Configuración común para las peticiones HTTP usando el token dinámico
-  const getRequestConfig = (method, endpoint = '', data = null) => {
+  useEffect(() => {
+    const token = authService.getCurrentToken(); // Asumiendo que authService tiene esta función
+    setAuthToken(token);
+    fetchMesas(token);
+  }, []);
+
+  const getRequestConfig = (method, endpoint = "", data = null) => {
     const config = {
-      method: method,
+      method,
       maxBodyLength: Infinity,
       url: `${API_URL}${endpoint}`,
       headers: {
-        'Content-Type': 'application/json',
-        'Cookie': 'JSESSIONID=8FE6B9C2F132610E351180A686659C3B'
-      }
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
     };
-    
-    // El token se maneja automáticamente por el interceptor de axios
-    // configurado en authService, ya no necesitamos añadirlo manualmente
-    
-    if (data) {
-      config.data = JSON.stringify(data);
-    }
-    
+    if (data) config.data = JSON.stringify(data);
     return config;
   };
 
-  const fetchMesas = () => {
+  const fetchMesas = (token = authToken) => {
     axios
-      .request(getRequestConfig('get'))
-      .then((response) => {
-        setMesasData(response.data);
+      .get(API_URL, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       })
-      .catch((error) => {
-        console.error("Error al obtener las mesas:", error);
-        // Si el error es por autenticación y el refresh token no funcionó
-        if (error.response && error.response.status === 401) {
-          // Redireccionar al login si es necesario
-          // authService.logout();
-          // window.location.href = '/login';
-        }
-      });
+      .then((response) => {
+        setMesasData(Array.isArray(response.data) ? response.data : []);
+      })
+      .catch((error) =>
+        console.error("Error al obtener las mesas:", error.message)
+      );
   };
 
-  useEffect(() => {
-    // Asegurarnos de que el interceptor de axios está configurado
-    // Esto es útil si el componente se carga directamente sin pasar por el login
-    authService.initializeAuth();
-    fetchMesas();
-  }, []);
+  const getMesaById = async (id) => {
+    try {
+      const response = await axios.get(`${API_URL}/${id}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response && error.response.status === 403) {
+        console.error("Acceso denegado: Token no autorizado o expirado.");
+        alert("No tienes permisos para ver esta mesa. Por favor inicia sesión nuevamente.");
+      } else {
+        console.error("Error al obtener la mesa:", error);
+      }
+      return null;
+    }
+  };
+  
+  
+
+  const handleViewDetails = async (mesaId) => {
+    const mesa = await getMesaById(mesaId);
+    if (mesa) {
+      setCurrentMesa(mesa);
+      setShowDetailView(true);
+    }
+  };
+
+  const handleEdit = async (mesaId) => {
+    const mesa = await getMesaById(mesaId);
+    if (mesa) {
+      setCurrentMesa(mesa);
+      setEditMode(true);
+      setShowModal(true);
+    }
+  };
+
+  const handleAddNew = () => {
+    setEditMode(false);
+    setCurrentMesa(null);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditMode(false);
+    setCurrentMesa(null);
+  };
+
+  const handleCloseDetailView = () => {
+    setShowDetailView(false);
+    setCurrentMesa(null);
+  };
 
   const handleToggleEstado = (mesa) => {
-    const config = getRequestConfig('patch', `/${mesa.id}/estado`, { estado: !mesa.estado });
-
-    axios.request(config)
-      .then((response) => {
-        console.log(JSON.stringify(response.data));
-        fetchMesas(); // Recargar las mesas después de actualizar el estado
-      })
-      .catch((error) => {
-        console.log(error);
-      });
+    const config = getRequestConfig("patch", `/${mesa.id}/estado`, {
+      estado: !mesa.estado,
+    });
+    axios
+      .request(config)
+      .then(fetchMesas)
+      .catch((error) =>
+        console.error("Error al cambiar el estado:", error.message)
+      );
   };
 
-  const onSubmit = (data) => {
+  const handleSubmitForm = (data) => {
     const processSubmission = (imageUrl) => {
       const newMesaData = {
         nombre: data.mesa,
         capacidad: parseInt(data.capacidad),
         imagen: imageUrl,
-        estado: data.estado === "Activo"
+        estado: data.estado === "Activo",
       };
-
-      const config = getRequestConfig('post', '', newMesaData);
-
-      axios.request(config)
-        .then((response) => {
-          console.log(JSON.stringify(response.data));
+      const config = getRequestConfig("post", "", newMesaData);
+      axios
+        .request(config)
+        .then(() => {
           fetchMesas();
           setShowModal(false);
-          reset();
         })
-        .catch((error) => {
-          console.log(error);
-        });
+        .catch(console.error);
     };
 
     if (data.img && data.img[0]) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        processSubmission(reader.result);
-      };
+      reader.onloadend = () => processSubmission(reader.result);
       reader.readAsDataURL(data.img[0]);
     } else {
       processSubmission("https://placehold.co/100x100.png");
     }
   };
 
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  // Filtrar mesas basado en el término de búsqueda
-  const filteredMesas = mesasData.filter(mesa => 
+  // Filtrado
+  const filteredMesas = mesasData.filter((mesa) =>
     mesa.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="d-flex">
-      <Sidebar />
-      {/* Header con título y botón para agregar */}
       <div className="container-fluid p-4">
         <div className="d-flex justify-content-between align-items-center">
           <h3>Mesas</h3>
-          <Button className="btn btn-danger" onClick={() => setShowModal(true)}>+ Agregar</Button>
+          <Button className="btn btn-danger" onClick={handleAddNew}>
+            + Agregar
+          </Button>
         </div>
-        <hr/>
+        <hr />
 
         <InputGroup className="mb-3">
           <InputGroup.Text className="bg-danger text-white">
@@ -163,96 +175,31 @@ function GestionMesas() {
             type="text"
             placeholder="Buscar Mesa por nombre..."
             value={searchTerm}
-            onChange={handleSearchChange}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </InputGroup>
 
-        {/* Tabla de MESAS */}
-        <Table striped bordered hover responsive>
-          <thead className="table-danger">
-            <tr>
-              <th>Imagen</th>
-              <th>Mesa</th>
-              <th>Capacidad</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredMesas.length > 0 ? (
-              filteredMesas.map((mesa) => (
-                <tr key={mesa.id} className="table-row">
-                  <td>
-                    <img src={mesa.imagen || "https://placehold.co/100x100.png"} alt={mesa.nombre} className="rounded" width="50" />
-                  </td>
-                  <td>{mesa.nombre}</td>
-                  <td>{mesa.capacidad}</td>
-                  <td>
-                    <Button 
-                      variant={mesa.estado ? "success" : "secondary"}
-                      size="sm"
-                      onClick={() => handleToggleEstado(mesa)}
-                    >
-                      {mesa.estado ? 'Activo' : 'Inactivo'}
-                    </Button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="4" className="text-center">No se encontraron mesas con ese nombre</td>
-              </tr>
-            )}
-          </tbody>
-        </Table>
+        <MesaList
+          mesas={filteredMesas}
+          searchTerm={searchTerm}
+          onView={handleViewDetails}
+          onEdit={handleEdit}
+          onToggleEstado={handleToggleEstado}
+        />
 
-        {/* Modal para agregar una mesa */}
-        <Modal show={showModal} onHide={() => {
-          setShowModal(false);
-          reset(); // Resetear el formulario al cerrar el modal
-        }}>
-          <Modal.Header closeButton>
-            <Modal.Title>Agregar Mesa</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <Form onSubmit={handleSubmit(onSubmit)}>
-              <Form.Group className="mb-3">
-                <Form.Label>Imagen</Form.Label>
-                <Form.Control type="file" accept="image/*" {...register('img')} />
-                {errors.img && <div className="text-danger small">{errors.img.message}</div>}
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Nombre de la Mesa</Form.Label>
-                <Form.Control type="text" placeholder="Ej: Mesa_05" {...register('mesa')} />
-                {errors.mesa && <div className="text-danger small">{errors.mesa.message}</div>}
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Capacidad</Form.Label>
-                <Form.Control type="number" placeholder="Ej: 4" {...register('capacidad')} />
-                {errors.capacidad && <div className="text-danger small">{errors.capacidad.message}</div>}
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Estado</Form.Label>
-                <Form.Select {...register('estado')}>
-                  <option value="Activo">Activo</option>
-                  <option value="Inactivo">Inactivo</option>
-                </Form.Select>
-                {errors.estado && <div className="text-danger small">{errors.estado.message}</div>}
-              </Form.Group>
-              <Modal.Footer>
-                <Button 
-                  variant="secondary" 
-                  onClick={() => {
-                    setShowModal(false);
-                    reset();
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button variant="danger" type="submit">Agregar</Button>
-              </Modal.Footer>
-            </Form>
-          </Modal.Body>
-        </Modal>
+<MesaDetail
+  mesa={currentMesa}
+  show={showDetailView}
+  onClose={handleCloseDetailView}
+/>
+
+        <MesaForm
+          show={showModal}
+          onHide={handleCloseModal}
+          onSave={handleSubmitForm}
+          mesa={currentMesa}
+          editMode={editMode}
+        />
       </div>
     </div>
   );
