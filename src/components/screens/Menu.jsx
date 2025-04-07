@@ -9,23 +9,21 @@ import MenuList from './menu/MenuList';
 import MenuForm from './menu/MenuForm';
 import MenuDetails from './menu/MenuDetail';
 
-
 const API_URL = 'http://localhost:8080/api';
 
 function Menu() {
   const [menuData, setMenuData] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [categorias, setCategorias] = useState([]);
-  const [editMode, setEditMode] = useState(false);
-  const [currentProductId, setCurrentProductId] = useState(null);
-  const [currentProduct, setCurrentProduct] = useState(null);
+  const [editingProduct, setEditingProduct] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredMenu, setFilteredMenu] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [showDetailView, setShowDetailView] = useState(false);
+  const [currentMenuItem, setCurrentMenuItem] = useState(null);
+  const [editMode, setEditMode] = useState(false);
 
-  // Authentication check
   useEffect(() => {
     if (!authService.isAuthenticated()) {
       window.location.href = '/login';
@@ -34,8 +32,7 @@ function Menu() {
       fetchData();
     }
   }, []);
-  
-  // Fetch products and categories
+
   const fetchData = async () => {
     setIsLoading(true);
     try {
@@ -43,7 +40,7 @@ function Menu() {
         axios.get(`${API_URL}/producto`),
         axios.get(`${API_URL}/categoria`)
       ]);
-      
+
       setMenuData(productResponse.data);
       setFilteredMenu(productResponse.data);
       setCategorias(categoryResponse.data);
@@ -55,7 +52,6 @@ function Menu() {
     }
   };
 
-  // Filter menu when search term changes
   useEffect(() => {
     const filtered = menuData.filter(item => 
       item.nombre.toLowerCase().includes(searchTerm.toLowerCase())
@@ -63,55 +59,57 @@ function Menu() {
     setFilteredMenu(filtered);
   }, [searchTerm, menuData]);
 
-  // Show toast notification
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
-    setTimeout(() => setToast({ ...toast, show: false }), 3000);
+    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
   };
 
-  // Process image - returns a promise with the processed image URL
+  const handleViewDetails = (productoId) => {
+    const producto = menuData.find(item => item.id === productoId);
+    if (producto) {
+      setCurrentMenuItem(producto);
+      setShowDetailView(true);
+    }
+  };
+
+  const handleCloseDetailView = () => {
+    setShowDetailView(false);
+    setCurrentMenuItem(null);
+  };
+
   const processImage = (imageFile, currentImageUrl = null) => {
     return new Promise((resolve) => {
       if (!imageFile) {
-        // If no new image was selected, use the current one or a placeholder
         resolve(currentImageUrl || "https://placehold.co/100x100.png");
         return;
       }
-      
-      // Check image size before processing
-      if (imageFile.size > 1024 * 1024) { // 1MB
+
+      if (imageFile.size > 1024 * 1024) {
         showToast('La imagen es demasiado grande. Máximo 1MB.', 'warning');
         resolve(currentImageUrl || "https://placehold.co/100x100.png");
         return;
       }
-      
+
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result);
       reader.readAsDataURL(imageFile);
     });
   };
 
-  // Add or update product
   const handleSubmit = async (data, imagenFile, selectedCategorias) => {
     setIsLoading(true);
     try {
-      // Process categories consistently for both create and update
       const categoriasSeleccionadas = selectedCategorias.map(cat => {
-        // If cat is an object with an id, use it; otherwise find the id from categorias
-        if (typeof cat === 'object' && cat.id) {
-          return { id: cat.id };
-        } else {
-          const categoriaObj = categorias.find(c => c.nombre === cat || c.id === cat);
-          return { id: categoriaObj.id };
-        }
+        if (typeof cat === 'object' && cat.id) return { id: cat.id };
+        const categoriaObj = categorias.find(c => c.nombre === cat || c.id === cat);
+        return { id: categoriaObj.id };
       });
-      
-      // Process image
+
       const imageUrl = await processImage(
-        imagenFile, 
-        editMode ? menuData.find(p => p.id === currentProductId)?.imagen : null
+        imagenFile,
+        editingProduct?.imagen || null
       );
-      
+
       const productoData = {
         nombre: data.nombre,
         precio: parseFloat(data.precio),
@@ -120,28 +118,24 @@ function Menu() {
         estado: true,
         categorias: categoriasSeleccionadas
       };
-      
+
       let response;
-      
-      if (editMode) {
-        // Update existing product
+
+      if (editingProduct) {
         response = await axios.patch(
-          `${API_URL}/producto/${currentProductId}`, 
-          { ...productoData, id: currentProductId }
+          `${API_URL}/producto/${editingProduct.id}`,
+          productoData
         );
-        
-        setMenuData(prevData => prevData.map(item => 
-          item.id === currentProductId ? response.data : item
-        ));
-        
+        setMenuData(prev =>
+          prev.map(p => (p.id === editingProduct.id ? response.data : p))
+        );
         showToast('Producto actualizado correctamente');
       } else {
-        // Add new product
         response = await axios.post(`${API_URL}/producto`, productoData);
-        setMenuData(prevData => [...prevData, response.data]);
+        setMenuData(prev => [...prev, response.data]);
         showToast('Producto añadido correctamente');
       }
-      
+
       closeModal();
     } catch (error) {
       console.error('Error al procesar el producto:', error);
@@ -151,19 +145,17 @@ function Menu() {
     }
   };
 
-  // Toggle product status
   const handleToggleEstado = async (producto) => {
     const nuevoEstado = !producto.estado;
     setIsLoading(true);
-    
+
     try {
       await axios.patch(`${API_URL}/producto/${producto.id}/estado`, { estado: nuevoEstado });
-      
-      // Update status in product list
+
       setMenuData(prevData => prevData.map(item => 
         item.id === producto.id ? { ...item, estado: nuevoEstado } : item
       ));
-      
+
       showToast(`Producto ${nuevoEstado ? 'activado' : 'desactivado'} correctamente`);
     } catch (error) {
       console.error('Error al actualizar estado:', error);
@@ -173,21 +165,23 @@ function Menu() {
     }
   };
 
-  // Handle product edit
   const handleEdit = (producto) => {
     setEditMode(true);
-    setCurrentProductId(producto.id);
-    setCurrentProduct(producto);
-    setShowModal(true);
+    setEditingProduct({
+      ...producto,
+      selectedCategories: producto.categorias?.map(cat => cat.id) || []
+    });
+    setShowModal(true); // <-- ¡Esto estaba faltando!
   };
+  
+  
 
-  // Close modal and reset state
   const closeModal = () => {
     setShowModal(false);
-    setEditMode(false);
-    setCurrentProductId(null);
-    setCurrentProduct(null);
+    setEditingProduct(null);
+    setEditMode(false); // <- importante resetear esto
   };
+  
 
   return (
     <div className="d-flex">
@@ -204,7 +198,6 @@ function Menu() {
         </div>
         <hr/>
 
-        {/* Search bar */}
         <InputGroup className="mb-3">
           <InputGroup.Text className="bg-danger text-white">
             <FaSearch />
@@ -217,7 +210,6 @@ function Menu() {
           />
         </InputGroup>
 
-        {/* Loading indicator */}
         {isLoading && (
           <div className="text-center my-3">
             <div className="spinner-border text-danger" role="status">
@@ -226,39 +218,40 @@ function Menu() {
           </div>
         )}
 
-        {/* Menu list - using only one component to display data */}
         <MenuList 
           menu={filteredMenu} 
+          onView={handleViewDetails}
           onEdit={handleEdit}
           onToggleStatus={handleToggleEstado}
           isLoading={isLoading}
         />
 
-        {/* Form modal for adding/editing products */}
-        <MenuForm 
-          showModal={showModal} 
-          closeModal={closeModal}
-          onSubmit={handleSubmit}
-          editMode={editMode}
-          currentProduct={currentProduct}
-          categorias={categorias}
-          isLoading={isLoading}
-        />
+<MenuForm 
+  showModal={showModal} 
+  closeModal={closeModal}
+  onSubmit={handleSubmit}
+  editMode={editMode}
+  currentProduct={editingProduct}
+  categorias={categorias}
+  isLoading={isLoading}
+  selectedCategories={editingProduct?.selectedCategories || []}
+  setSelectedCategories={(cats) =>
+    setEditingProduct(prev => ({ ...prev, selectedCategories: cats }))
+  }
+/>
 
-        {showDetailView && currentProduct && (
+
+        {showDetailView && currentMenuItem && (
           <MenuDetails
-            menu={currentProduct}
-            categorias={categorias}
-            categoriasporProductos={[]}
-            onClose={() => setShowDetailView(false)}
+            menu={currentMenuItem}
+            onClose={handleCloseDetailView}
           />
         )}
 
-        {/* Toast notifications */}
         <ToastContainer position="top-end" className="p-3">
           <Toast 
             show={toast.show} 
-            onClose={() => setToast({...toast, show: false})}
+            onClose={() => setToast(prev => ({...prev, show: false}))}
             bg={toast.type}
             delay={3000}
             autohide

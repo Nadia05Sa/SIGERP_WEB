@@ -106,7 +106,7 @@ const ImageCarousel = ({ index }) => {
 // Componente de reseña individual para mejorar la modularidad
 const ReseñaItem = ({ reseña, index }) => {
   const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    const options = { year: 'numeric', month: '2-digit', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('es-ES', options);
   };
 
@@ -118,13 +118,8 @@ const ReseñaItem = ({ reseña, index }) => {
 
   return (
     <div className="mb-4 border p-3 rounded shadow-sm table-row hover-effect">
-      <div className="position-relative">
-        {/* Estrella en la esquina superior derecha */}
-        <div className="position-absolute top-0 end-0 p-2">
-          <StarRating value={calificacion} editable={false} />
-          <span className="ms-2 text-muted">{calificacion} de 5</span>
-        </div>
-        
+      <div className="d-flex justify-content-between align-items-end">
+               
         <div className="d-flex pt-4">
           {/* Imagen de perfil con carrusel */}
           <div className="me-3">
@@ -133,13 +128,16 @@ const ReseñaItem = ({ reseña, index }) => {
           <div className="w-100">
             <div className="d-flex justify-content-between align-items-center">
               <h5>{nombre}</h5>
-              <small className="text-muted">{formatDate(fecha)}</small>
             </div>
             <p className="mt-2">{comentario}</p>
-            {reseña.mesa && (
-              <small className="text-muted">Mesa: {reseña.mesa.id}</small>
-            )}
           </div>
+        </div>
+
+        {/* Estrella en la esquina superior derecha */}
+        <div className="d-flex flex-column align-items-end">
+          <StarRating value={calificacion} editable={false} />
+          <small className="text-muted px-1">{formatDate(fecha)}</small>
+          {/*<span className="text-muted">{calificacion} de 5</span>*/}
         </div>
       </div>
     </div>
@@ -254,19 +252,21 @@ function Reseñas() {
       <div className="container-fluid p-4">
         <h3 className="mb-4">Reseñas</h3>
         
-        {/* Panel de información general */}
-        <div className="container-fluid p-4">
-          <h1 className="display-4 mb-0">{calificacionPromedio}</h1>
-          <div className="d-flex align-items-center mb-4">
-            <StarRating value={calificacionPromedio} editable={false} />
-            <div className="mx-2">
-              <p className="mb-0">Basado en {reseñas.length.toLocaleString()} reseñas</p>
+        
+        
+        {/* Calificaciones */}
+        <div className="shadow-sm mb-4 d-flex justify-content-center align-items-center">
+          {/* Panel de información general */}
+          <div className="p-4">
+            <h1 className="display-4 mb-0">{calificacionPromedio}</h1>
+            <div className="align-items-center mb-4">
+              <StarRating value={calificacionPromedio} editable={false} />
+              <div className="mx-2">
+                <p className="mb-0">Basado en {reseñas.length.toLocaleString()} reseñas</p>
+              </div>
             </div>
           </div>
-        </div>
-        
-        {/* Gráfica de barras */}
-        <div className="card shadow-sm mb-4">
+          {/* Gráfica de barras */}
           <div className="card-body">
             <h5 className="card-title text-center mb-4 text-danger">Distribución de Calificaciones</h5>
             <div style={{ height: "250px" }}>

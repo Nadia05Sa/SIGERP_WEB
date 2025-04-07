@@ -8,6 +8,7 @@ import MesaList from "./mesas/MesaList";
 import MesaForm from "./mesas/MesaForm";
 import MesaDetail from "./mesas/MesaDetail";
 import authService from "../../service/authService";
+import Swal from 'sweetalert2';
 
 const API_URL = "http://localhost:8080/api/mesas";
 
@@ -21,7 +22,7 @@ function GestionMesas() {
   const [authToken, setAuthToken] = useState("");
 
   useEffect(() => {
-    const token = authService.getCurrentToken(); // Asumiendo que authService tiene esta función
+    const token = authService.getCurrentToken(); 
     setAuthToken(token);
     fetchMesas(token);
   }, []);
@@ -66,18 +67,11 @@ function GestionMesas() {
       });
       return response.data;
     } catch (error) {
-      if (error.response && error.response.status === 403) {
-        console.error("Acceso denegado: Token no autorizado o expirado.");
-        alert("No tienes permisos para ver esta mesa. Por favor inicia sesión nuevamente.");
-      } else {
-        console.error("Error al obtener la mesa:", error);
-      }
+      console.error("Error al obtener la mesa:", error);
       return null;
     }
   };
   
-  
-
   const handleViewDetails = async (mesaId) => {
     const mesa = await getMesaById(mesaId);
     if (mesa) {
@@ -113,15 +107,40 @@ function GestionMesas() {
   };
 
   const handleToggleEstado = (mesa) => {
+    const newEstado = !mesa.estado;
     const config = getRequestConfig("patch", `/${mesa.id}/estado`, {
-      estado: !mesa.estado,
+      estado: newEstado,
     });
-    axios
-      .request(config)
-      .then(fetchMesas)
-      .catch((error) =>
-        console.error("Error al cambiar el estado:", error.message)
-      );
+
+    Swal.fire({
+      title: 'Cambiar estado',
+      text: `¿Estás seguro de que deseas cambiar el estado a ${newEstado ? 'Activo' : 'Inactivo'}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cambiar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        axios
+          .request(config)
+          .then(() => {
+            fetchMesas();
+            Swal.fire(
+              'Estado cambiado!',
+              `El estado de la mesa ha sido cambiado a ${newEstado ? 'Activo' : 'Inactivo'}.`,
+              'success'
+            );
+          })
+          .catch((error) => {
+            console.error("Error al cambiar el estado:", error.message);
+            Swal.fire(
+              'Error!',
+              'No se pudo cambiar el estado de la mesa.',
+              'error'
+            );
+          });
+      }
+    });
   };
 
   const handleSubmitForm = (data) => {
@@ -132,22 +151,44 @@ function GestionMesas() {
         imagen: imageUrl,
         estado: data.estado === "Activo",
       };
-      const config = getRequestConfig("post", "", newMesaData);
+
+      // Use the appropriate method based on whether we're in edit mode or creating new
+      const method = editMode ? "patch" : "post";
+      const endpoint = editMode ? `/${currentMesa.id}` : "";
+      
+      const config = getRequestConfig(method, endpoint, newMesaData);
+      
       axios
         .request(config)
         .then(() => {
-          fetchMesas();
-          setShowModal(false);
+          fetchMesas(); // Refresh table list
+          setShowModal(false); // Close modal
+          Swal.fire({
+            title: editMode ? 'Mesa actualizada!' : 'Mesa creada!',
+            text: editMode ? 'La mesa ha sido actualizada correctamente.' : 'La mesa ha sido creada correctamente.',
+            icon: 'success',
+            timer: 2000
+          });
         })
-        .catch(console.error);
+        .catch((error) => {
+          console.error("Error:", error.message);
+          Swal.fire({
+            title: 'Error!',
+            text: `No se pudo ${editMode ? 'actualizar' : 'crear'} la mesa.`,
+            icon: 'error'
+          });
+        });
     };
 
+    // Handle image
     if (data.img && data.img[0]) {
       const reader = new FileReader();
       reader.onloadend = () => processSubmission(reader.result);
       reader.readAsDataURL(data.img[0]);
     } else {
-      processSubmission("https://placehold.co/100x100.png");
+      // If in edit mode and no new image is provided, use the existing image
+      const imageUrl = editMode && currentMesa.imagen ? currentMesa.imagen : "https://placehold.co/100x100.png";
+      processSubmission(imageUrl);
     }
   };
 
@@ -187,11 +228,11 @@ function GestionMesas() {
           onToggleEstado={handleToggleEstado}
         />
 
-<MesaDetail
-  mesa={currentMesa}
-  show={showDetailView}
-  onClose={handleCloseDetailView}
-/>
+        <MesaDetail
+          mesa={currentMesa}
+          show={showDetailView}
+          onClose={handleCloseDetailView}
+        />
 
         <MesaForm
           show={showModal}

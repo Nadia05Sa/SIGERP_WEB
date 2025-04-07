@@ -6,7 +6,9 @@ import axios from 'axios';
 import MeseroList from './mesero/MeseroList';
 import MeseroDetail from './mesero/MeseroDetail';
 import MeseroForm from './mesero/MeseroForm';
+import { useDebounce } from 'use-debounce'; // Importar useDebounce
 import '../../App.css';
+import authService from '../../service/authService';
 
 // API endpoints
 const API_URL = 'http://localhost:8080/api/empleado';
@@ -25,29 +27,33 @@ const EmpleadoForm = () => {
     const [mesas, setMesas] = useState([]);
     const [mesasPorEmpleado, setMesasPorEmpleado] = useState({});
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearchTerm] = useDebounce(searchTerm, 300); // Debounce para la búsqueda
     const [showModal, setShowModal] = useState(false);
     const [showDetailView, setShowDetailView] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [currentEmpleado, setCurrentEmpleado] = useState(null);
+      const [authToken, setAuthToken] = useState("");
+    
     
     // In a real app, this should come from an auth context or environment variable
-    const authToken = 'eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc0MzU0Mjc5NywiZXhwIjoxNzQzNjI5MTk3fQ.3yb8aXpMifKe0WFTUj-W-BR_oKZmpKThS1EbQuCacQbg-B-_vDXCXLBMmrb7BfCymSoMVlc5G2yWVuMSkYsp0w';
 
     /**
      * Carga las mesas disponibles al iniciar el componente
      */
     useEffect(() => {
-        let isMounted = true;
-        
-        // Obtener todas las mesas
-        axios.get(MESAS_API_URL, { 
-            headers: { 
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (isMounted) {
+        const token = authService.getCurrentToken(); 
+        setAuthToken(token);
+    
+        if (authToken) {
+            loadEmpleados();
+            // Obtener todas las mesas
+            axios.get(MESAS_API_URL, { 
+                headers: { 
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
                 const mesasData = Array.isArray(response.data) ? response.data : [];
                 setMesas(mesasData);
                 
@@ -57,25 +63,12 @@ const EmpleadoForm = () => {
                     mesasMap[mesa.id] = mesa.nombre || `Mesa ${mesa.id}`;
                 });
                 setMesasPorEmpleado(mesasMap);
-            }
-        })
-        .catch(error => {
-            if (isMounted) {
+            })
+            .catch(error => {
                 console.error('Error al obtener mesas', error);
-            }
-        });
-        
-        return () => {
-            isMounted = false;
-        };
-    }, [authToken]);
-
-    /**
-     * Carga la lista de empleados al iniciar el componente
-     */
-    useEffect(() => {
-        loadEmpleados();
-    }, [authToken]);
+            });
+        }
+    }, [authToken]); // Solo se ejecuta cuando authToken cambia
 
     /**
      * Carga la lista de empleados desde la API
@@ -199,7 +192,6 @@ const EmpleadoForm = () => {
             ));
             
             // Mostrar mensaje de éxito
-            // En una implementación real, usarías el componente de Dialog aquí
             alert(`Estado del empleado ${empleado.nombre} actualizado correctamente`);
             
         } catch (error) {
@@ -227,7 +219,6 @@ const EmpleadoForm = () => {
                 estado: formData.estado === "true" || formData.estado === true,
                 mesas: mesasArray
             });
-            
             
             if (editMode && currentEmpleado) {
                 // Actualizar un empleado existente
@@ -266,7 +257,7 @@ const EmpleadoForm = () => {
 
     // Filtrar meseros basado en el término de búsqueda
     const filteredMeseros = meseros.filter(mesero => 
-        `${mesero.nombre || ''} ${mesero.apellido || ''}`.toLowerCase().includes(searchTerm.toLowerCase())
+        `${mesero.nombre || ''} ${mesero.apellido || ''}`.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
     );
 
     return (
@@ -274,23 +265,22 @@ const EmpleadoForm = () => {
             {/* Header con título y botón para agregar */}
             <div className="d-flex justify-content-between align-items-center">
                 <h3>Gestión de Meseros</h3>
+
+                {/* Barra de búsqueda */}
+                <InputGroup className="mb-3 w-50">
+                    <InputGroup.Text className="bg-danger text-white">
+                        <FaSearch />
+                    </InputGroup.Text>
+                    <Form.Control
+                        type="text"
+                        placeholder="Buscar por nombre de Meseros..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </InputGroup>
                 <Button className="btn btn-danger" onClick={handleAddNew}>+ Agregar</Button>
             </div>
             <hr/>
-
-            {/* Barra de búsqueda */}
-            <InputGroup className="mb-3">
-                <InputGroup.Text className="bg-danger text-white">
-                    <FaSearch />
-                </InputGroup.Text>
-                <Form.Control
-                    type="text"
-                    placeholder="Buscar por nombre de Meseros..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </InputGroup>
-            
             {/* Lista de meseros */}
             <MeseroList 
                 meseros={filteredMeseros} 

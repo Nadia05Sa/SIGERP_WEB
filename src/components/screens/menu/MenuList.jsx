@@ -5,7 +5,7 @@ import { IoEyeOutline, IoCreateOutline, IoCheckmarkCircleOutline, IoCloseCircleO
 /**
  * MenuList - Componente que muestra la tabla de menú con acciones y paginación simplificada
  */
-const MenuList = ({ menu, onView, onEdit, onToggleStatus }) => {
+const MenuList = ({ menu, onView, onEdit, onToggleStatus, isLoading }) => {
     // Estado para la paginación
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(5); // Número de items por página
@@ -75,6 +75,11 @@ const MenuList = ({ menu, onView, onEdit, onToggleStatus }) => {
     // Verificar si hay datos para mostrar
     if (!menu || menu.length === 0) {
         return <div className="alert alert-info">No hay productos disponibles.</div>;
+    }
+
+    // Verificar si está cargando
+    if (isLoading) {
+        return <div className="alert alert-warning">Cargando productos...</div>;
     }
 
     return(

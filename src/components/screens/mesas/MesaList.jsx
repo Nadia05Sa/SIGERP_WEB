@@ -53,13 +53,13 @@ function MesaList({ mesas, searchTerm, onView, onEdit, onToggleEstado }) {
                     title="Ver detalles"
                   />
 
-                  <IoCreateOutline
-                    size={20}
-                    className="text-warning cursor-pointer"
-                    onClick={() => onEdit(mesa.id)}
-                    style={{ cursor: "pointer" }}
-                    title="Editar"
-                  />
+<IoCreateOutline
+  size={20}
+  className="text-warning cursor-pointer"
+  onClick={() => onEdit(mesa.id)} // Asegúrate de que esto se esté llamando correctamente
+  style={{ cursor: "pointer" }}
+  title="Editar"
+/>
 
                   {mesa.estado ? (
                     <IoCheckmarkCircleOutline
