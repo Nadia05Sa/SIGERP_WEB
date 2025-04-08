@@ -50,7 +50,7 @@ function MainLayout() {
       {/* Main Content */}
       <div style={{ marginLeft: showSidebar ? '250px' : '0', width: '100%' }}>
         <Routes>
-            <Route path="/" element={<Reseña />} />
+            <Route path="/" element={<Login />} />
             <Route path="/home" element={
               <ProtectedRoute>
                 <Home />
