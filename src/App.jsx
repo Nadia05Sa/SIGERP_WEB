@@ -10,6 +10,7 @@ import Categorias from './components/screens/Categorias';
 import Productos from './components/screens/Menu';
 import Reseñas from './components/screens/Reseñas';
 import authService from './service/authService';
+import Reseña from './components/screens/reseña/Reseña';
 
 // Custom ProtectedRoute component
 const ProtectedRoute = ({ children }) => {
@@ -49,7 +50,7 @@ function MainLayout() {
       {/* Main Content */}
       <div style={{ marginLeft: showSidebar ? '250px' : '0', width: '100%' }}>
         <Routes>
-            <Route path="/" element={<Login />} />
+            <Route path="/" element={<Reseña />} />
             <Route path="/home" element={
               <ProtectedRoute>
                 <Home />
