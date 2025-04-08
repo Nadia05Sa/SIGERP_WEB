@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import '../../App.css'
+import '../../App.css';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import Sidebar from './Sidebar';
-import { Button, Form, Modal, Table, InputGroup } from 'react-bootstrap';
+import { Button, Form, Modal, Table, InputGroup, Pagination } from 'react-bootstrap';
 import { FaSearch } from 'react-icons/fa';
+import { IoEyeOutline, IoCheckmarkCircleOutline, IoCloseCircleOutline } from 'react-icons/io5';
 import authService from '../../service/authService';
+import Swal from 'sweetalert2'; // Import SweetAlert2
 
 const API_URL = 'http://localhost:8080/api/categoria';
 
@@ -15,17 +16,18 @@ function Categorias() {
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({ 
     nombre: '', 
-    estado: 'Activo',
+    estado: true,
     imagen: null
   });
   const [errors, setErrors] = useState({});
+  const itemsPerPage = 5; // Categorías por página
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchCategorias();
   }, []);
 
   const getRequestConfig = (method, endpoint = '', data = null) => {
-    // Obtener el token del servicio de autenticación
     const token = authService.getCurrentToken();
     
     const config = {
@@ -34,7 +36,7 @@ function Categorias() {
       url: `${API_URL}${endpoint}`,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` // Usar el token dinámico
+        'Authorization': `Bearer ${token}`
       }
     };
     
@@ -50,28 +52,45 @@ function Categorias() {
 
     axios.request(config)
       .then(response => {
-        console.log('Categorías obtenidas:', response.data);
-        setCategoriasData(response.data);
+        let dataArray = [];
+        if (Array.isArray(response.data)) {
+          dataArray = response.data;
+        } else if (response.data && typeof response.data === 'object') {
+          const possibleArrayProps = ['data', 'items', 'results', 'categorias'];
+          for (const prop of possibleArrayProps) {
+            if (Array.isArray(response.data[prop])) {
+              dataArray = response.data[prop];
+              break;
+            }
+          }
+          if (dataArray.length === 0 && !Array.isArray(response.data) && response.data !== null) {
+            if (response.data.id && response.data.nombre) {
+              dataArray = [response.data];
+            }
+          }
+        }
+        setCategoriasData(dataArray);
       })
       .catch(error => {
         console.error('Error al obtener las categorías:', error);
-        // Si el error es 401 (Unauthorized), redirigir al login
+        setCategoriasData([]);
         if (error.response && error.response.status === 401) {
           authService.logout();
-          window.location.href = '/'; // Redirigir al login
+          window.location.href = '/';
         }
       });
   };
 
   const handleFormChange = (e) => {
-    const { name, value, files } = e.target;
+    const { name, value, type, checked, files } = e.target;
     
     if (name === 'imagen' && files && files[0]) {
-      // Almacenar el archivo para procesarlo al enviar
       setFormData({ 
         ...formData, 
         imagen: files[0]
       });
+    } else if (name === 'estado' && type === 'checkbox') {
+      setFormData({ ...formData, [name]: checked });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -81,17 +100,16 @@ function Categorias() {
     const newErrors = {};
     if (!formData.nombre.trim()) newErrors.nombre = "El nombre es obligatorio";
     
-    // Comprobar si ya existe una categoría con el mismo nombre
-    const exists = categoriasData.some(cat => 
-      cat.nombre.toLowerCase() === formData.nombre.toLowerCase()
-    );
-    if (exists) newErrors.nombre = "Ya existe una categoría con este nombre";
+    if (Array.isArray(categoriasData)) {
+      const exists = categoriasData.some(cat => 
+        cat.nombre && cat.nombre.toLowerCase() === formData.nombre.toLowerCase()
+      );
+      if (exists) newErrors.nombre = "Ya existe una categoría con este nombre";
+    }
     
-    // Validar imagen si es requerida
     if (!formData.imagen) {
       newErrors.imagen = "La imagen es obligatoria";
     } else {
-      // Validar tamaño y formato de la imagen
       const file = formData.imagen;
       if (file.size > 2000000) {
         newErrors.imagen = "El archivo es muy grande (máx. 2MB)";
@@ -120,14 +138,13 @@ function Categorias() {
   const resetForm = () => {
     setFormData({
       nombre: '', 
-      estado: 'Activo',
+      estado: true,
       imagen: null
     });
     setErrors({});
   };
 
   const agregarCategoria = () => {
-    // Procesar la imagen usando FileReader
     const processSubmission = (imageUrl) => {
       const categoriaData = {
         nombre: formData.nombre,
@@ -138,28 +155,45 @@ function Categorias() {
       const config = getRequestConfig('post', '', categoriaData);
 
       axios.request(config)
-        .then((response) => {
-          console.log('Categoría agregada con éxito:', response.data);
+        .then(() => {
           fetchCategorias();
           setShowModal(false);
           resetForm();
+          Swal.fire({
+            icon: 'success',
+            title: '¡Categoría agregada!',
+            text: `La categoría ${formData.nombre} se ha agregado correctamente.`,
+            confirmButtonColor: '#dc3545'
+          });
         })
         .catch(error => {
           console.error('Error al agregar categoría:', error);
-          // Mostrar más detalles del error para depuración
           if (error.response) {
-            console.error('Datos de error:', error.response.data);
-            console.error('Estado HTTP:', error.response.status);
-            
-            // Si el error es 401 (Unauthorized), redirigir al login
             if (error.response.status === 401) {
               authService.logout();
               window.location.href = '/';
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo agregar la categoría. Inténtelo de nuevo.',
+                confirmButtonColor: '#dc3545'
+              });
             }
           } else if (error.request) {
-            console.error('No se recibió respuesta:', error.request);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error de conexión',
+              text: 'No se recibió respuesta del servidor.',
+              confirmButtonColor: '#dc3545'
+            });
           } else {
-            console.error('Error de configuración:', error.message);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'Ocurrió un error al procesar la solicitud.',
+              confirmButtonColor: '#dc3545'
+            });
           }
         });
     };
@@ -171,35 +205,72 @@ function Categorias() {
       };
       reader.readAsDataURL(formData.imagen);
     } else {
-      // Si no hay imagen, usar placeholder
       processSubmission("https://placehold.co/100x100.png");
     }
   };
 
   const handleToggleEstado = (categoria) => {
-    // Cambiar entre Activo/Inactivo
-    const isActive = categoria.estado === 'Activo';
-    const newEstado = isActive ? 'Inactivo' : 'Activo';
+    const isActive = categoria.estado;
+    const newEstado = !isActive;
+    const estadoText = newEstado ? 'Activo' : 'Inactivo';
     
+    Swal.fire({
+      title: '¿Cambiar estado?',
+      text: `¿Desea cambiar el estado de la categoría "${categoria.nombre}" a ${estadoText}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, cambiar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        toggleEstadoCategoria(categoria, newEstado);
+      }
+    });
+  };
+  
+  const toggleEstadoCategoria = (categoria, newEstado) => {
     const categoriaData = {
-      nombre: categoria.nombre,
-      estado: newEstado,
-      imagen: categoria.imagen
+      estado: newEstado // Solo se actualiza el estado
     };
 
-    const config = getRequestConfig('put', `/${categoria.id}`, categoriaData);
+    const config = {
+      method: 'patch',
+      maxBodyLength: Infinity,
+      url: `http://localhost:8080/api/categoria/${categoria.id}/estado`, // Usar el ID de la categoría
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authService.getCurrentToken()}` // Asegúrate de incluir el token de autorización
+      },
+      data: JSON.stringify(categoriaData) // Convertir a JSON
+    };
 
     axios.request(config)
-      .then((response) => {
-        console.log('Categoría actualizada:', response.data);
-        fetchCategorias();
+      .then(() => {
+        fetchCategorias(); // Refrescar la lista de categorías
+        const estadoText = newEstado ? 'activada' : 'desactivada';
+        Swal.fire({
+          icon: 'success',
+          title: 'Estado actualizado',
+          text: `La categoría "${categoria.nombre}" ha sido ${estadoText}.`,
+          confirmButtonColor: '#dc3545',
+          timer: 2000,
+          timerProgressBar: true
+        });
       })
       .catch(error => {
         console.error('Error al actualizar categoría:', error);
-        // Si el error es 401 (Unauthorized), redirigir al login
         if (error.response && error.response.status === 401) {
           authService.logout();
           window.location.href = '/';
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo actualizar el estado de la categoría.',
+            confirmButtonColor: '#dc3545'
+          });
         }
       });
   };
@@ -213,11 +284,21 @@ function Categorias() {
     resetForm();
   };
 
-  const filteredCategorias = categoriasData.filter(categoria =>
-    categoria.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCategorias = Array.isArray(categoriasData) 
+    ? categoriasData.filter(categoria => 
+        categoria.nombre && categoria.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : [];
 
-  // Función para previsualizar imagen
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentCategorias = filteredCategorias.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredCategorias.length / itemsPerPage);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
   const renderImagePreview = () => {
     if (!formData.imagen) return null;
     
@@ -229,12 +310,43 @@ function Categorias() {
           className="rounded" 
           style={{ maxHeight: "100px" }} 
           onLoad={(e) => {
-            // Liberar el objeto URL una vez cargada la imagen para evitar pérdidas de memoria
             return () => URL.revokeObjectURL(e.target.src);
           }}
         />
       </div>
     );
+  };
+
+  const onView = (categoriaId) => {
+    const categoria = Array.isArray(categoriasData) 
+      ? categoriasData.find(cat => cat.id === categoriaId)
+      : null;
+    
+    if (categoria) {
+      const estadoText = categoria.estado ? 'Activo' : 'Inactivo';
+      Swal.fire({
+        title: categoria.nombre,
+        html: `
+          <div class="text-center">
+            <img src="${categoria.imagen || "https://placehold.co/100x100.png"}" 
+                 alt="${categoria.nombre}" 
+                 class="rounded mb-3" 
+                 style="max-height: 150px; max-width: 150px;">
+            <p><strong>Estado:</strong> ${estadoText}</p>
+            <p><strong>ID:</strong> ${categoria.id}</p>
+          </div>
+        `,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Cerrar'
+      });
+    } else {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se encontró la categoría',
+        confirmButtonColor: '#dc3545'
+      });
+    }
   };
 
   return (
@@ -260,46 +372,77 @@ function Categorias() {
       <Table striped bordered hover responsive>
         <thead className="table-danger">
           <tr>
-            <th>Imagen</th>
+            <th>Id</th>
             <th>Nombre</th>
-            <th>Estado</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           {filteredCategorias.length > 0 ? (
-            filteredCategorias.map((categoria) => (
+            currentCategorias.map((categoria, index) => (
               <tr key={categoria.id} className="table-row">
-                <td>
-                  <img 
-                    src={categoria.imagen || "https://placehold.co/100x100.png"} 
-                    alt={categoria.nombre} 
-                    className="rounded" 
-                    width="50" 
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "https://placehold.co/100x100.png";
-                    }}
-                  />
-                </td>
+                <td>{indexOfFirstItem + index + 1}</td>
                 <td>{categoria.nombre}</td>
                 <td>
-                  <Button 
-                    variant={categoria.estado === 'Activo' ? "success" : "secondary"}
-                    size="sm"
-                    onClick={() => handleToggleEstado(categoria)}
-                  >
-                    {categoria.estado}
-                  </Button>
+                  <div className="d-flex justify-content-around">
+                    <IoEyeOutline 
+                      size={20} 
+                      className="text-primary cursor-pointer" 
+                      onClick={() => onView(categoria.id)}
+                      style={{ cursor: 'pointer' }}
+                      title="Ver detalles"
+                    />
+                    
+                    {categoria.estado ? (
+                      <IoCheckmarkCircleOutline 
+                        size={20} 
+                        className="text-success cursor-pointer" 
+                        onClick={() => handleToggleEstado(categoria)}
+                        style={{ cursor: 'pointer' }}
+                        title="Activo - Click para desactivar"
+                      />
+                    ) : (
+                      <IoCloseCircleOutline 
+                        size={20} 
+                        className="text-danger cursor-pointer" 
+                        onClick={() => handleToggleEstado(categoria)}
+                        style={{ cursor: 'pointer' }}
+                        title="Inactivo - Click para activar"
+                      />
+                    )}
+                  </div>
                 </td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="3" className="text-center">No hay categorías para mostrar</td>
+              <td colSpan="4" className="text-center">No hay categorías para mostrar</td>
             </tr>
           )}
         </tbody>
       </Table>
+
+      <div className="d-flex justify-content-end mt-3">
+        <Pagination>
+          <Pagination.Prev
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          />
+          {Array.from({ length: totalPages }, (_, idx) => (
+            <Pagination.Item
+              key={idx + 1}
+              active={idx + 1 === currentPage}
+              onClick={() => handlePageChange(idx + 1)}
+            >
+              {idx + 1}
+            </Pagination.Item>
+          ))}
+          <Pagination.Next
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages || totalPages === 0}
+          />
+        </Pagination>
+      </div>
 
       <Modal show={showModal} onHide={handleCloseModal}>
         <Modal.Header closeButton>
@@ -330,16 +473,14 @@ function Categorias() {
               {errors.nombre && <div className="text-danger small">{errors.nombre}</div>}
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Estado</Form.Label>
-              <Form.Select 
+              <Form.Check 
+                type="checkbox" 
+                id="estadoCheckbox"
                 name="estado"
-                value={formData.estado}
+                checked={formData.estado}
                 onChange={handleFormChange}
-              >
-                <option value="Activo">Activo</option>
-                <option value="Inactivo">Inactivo</option>
-              </Form.Select>
-              {errors.estado && <div className="text-danger small">{errors.estado}</div>}
+                label="Activo"
+              />
             </Form.Group>
             <Modal.Footer>
               <Button variant="secondary" onClick={handleCloseModal}>Cancelar</Button>

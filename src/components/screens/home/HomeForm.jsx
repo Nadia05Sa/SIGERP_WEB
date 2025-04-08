@@ -155,14 +155,15 @@ function HomeForm({ show, onHide, onVentaAdded, isLoading, setIsLoading }) {
             />
           </Form.Group>
           
-          <div className="d-flex justify-content-between mt-4">
+          <Modal.Footer>
             <Button variant="secondary" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button variant="primary" type="submit" disabled={isLoading}>
+            <Button variant="danger" type="submit" disabled={isLoading}>
               {isLoading ? 'Guardando...' : 'Registrar Venta'}
             </Button>
-          </div>
+          </Modal.Footer>
+         
         </Form>
       </Modal.Body>
     </Modal>

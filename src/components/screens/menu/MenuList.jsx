@@ -5,7 +5,7 @@ import { IoEyeOutline, IoCreateOutline, IoCheckmarkCircleOutline, IoCloseCircleO
 /**
  * MenuList - Componente que muestra la tabla de menú con acciones y paginación simplificada
  */
-const MenuList = ({ menu, onView, onEdit, onToggleStatus, isLoading }) => {
+const MenuList = ({ menu, onView, onEdit, onToggleStatus }) => {
     // Estado para la paginación
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(5); // Número de items por página
@@ -19,11 +19,12 @@ const MenuList = ({ menu, onView, onEdit, onToggleStatus, isLoading }) => {
             const indexOfLastItem = currentPage * itemsPerPage;
             const indexOfFirstItem = indexOfLastItem - itemsPerPage;
             
-            // Obtener los items de la página actual
-            setCurrentMenu(menu.slice(indexOfFirstItem, indexOfLastItem));
+            // Obtener los items de la página actual, filtrando elementos nulos
+            const validMenuItems = menu.filter(item => item !== null);
+            setCurrentMenu(validMenuItems.slice(indexOfFirstItem, indexOfLastItem));
             
             // Calcular número total de páginas
-            setTotalPages(Math.ceil(menu.length / itemsPerPage));
+            setTotalPages(Math.ceil(validMenuItems.length / itemsPerPage));
         } else {
             setCurrentMenu([]);
             setTotalPages(0);
@@ -72,17 +73,8 @@ const MenuList = ({ menu, onView, onEdit, onToggleStatus, isLoading }) => {
         }
     };
 
-    // Verificar si hay datos para mostrar
-    if (!menu || menu.length === 0) {
-        return <div className="alert alert-info">No hay productos disponibles.</div>;
-    }
 
-    // Verificar si está cargando
-    if (isLoading) {
-        return <div className="alert alert-warning">Cargando productos...</div>;
-    }
-
-    return(
+    return (
         <>
             <Table striped bordered hover responsive>
                 <thead className="table-danger">
@@ -107,16 +99,18 @@ const MenuList = ({ menu, onView, onEdit, onToggleStatus, isLoading }) => {
                                 <td>${producto.precio ? producto.precio.toFixed(2) : '0.00'}</td>
                                 <td>{producto.descripcion || 'Sin descripción'}</td>
                                 <td>
-                                    {producto.categorias && producto.categorias.length > 0 ? (
-                                        producto.categorias.map((categoria) => (
-                                            <span key={categoria.id || index} className="badge bg-primary me-1">
-                                                {categoria.nombre}
-                                            </span>
-                                        ))
-                                    ) : (
-                                        <span className="text-muted">Sin categorías</span>
-                                    )}
-                                </td>
+                             {producto.categorias && producto.categorias.length > 0 ? (
+                                 producto.categorias
+                                     .filter(categoria => categoria !== null && categoria !== undefined) // Filtrar elementos nulos
+                                     .map((categoria) => (
+                                         <span key={categoria.id || index} className="badge bg-primary me-1">
+                                             {categoria.nombre || 'Sin nombre'}
+                                         </span>
+                                     ))
+                             ) : (
+                                 <span className="text-muted">Sin categorías</span>
+                             )}
+                         </td>
                                 <td>
                                     <div className="d-flex justify-content-around">
                                         {/* Ver detalles */}

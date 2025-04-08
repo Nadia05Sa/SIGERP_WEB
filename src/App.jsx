@@ -42,7 +42,7 @@ function MainLayout() {
   const showSidebar = location.pathname !== '/';
 
   return (
-    <div className="d-flex" style={{ height: '100vh' }}>
+    <div className="d-flex" style={{ height: '100%' }}>
       {/* Sidebar */}
       {showSidebar && <Sidebar />}
 

@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import '../../App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Button, Form, InputGroup, Toast, ToastContainer } from 'react-bootstrap';
+import { Button, Form, InputGroup } from 'react-bootstrap';
 import { FaSearch } from 'react-icons/fa';
 import authService from '../../service/authService';
 import MenuList from './menu/MenuList';
 import MenuForm from './menu/MenuForm';
 import MenuDetails from './menu/MenuDetail';
+import Swal from 'sweetalert2';
 
 const API_URL = 'http://localhost:8080/api';
 
@@ -19,7 +20,6 @@ function Menu() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredMenu, setFilteredMenu] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [showDetailView, setShowDetailView] = useState(false);
   const [currentMenuItem, setCurrentMenuItem] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -27,10 +27,11 @@ function Menu() {
   useEffect(() => {
     if (!authService.isAuthenticated()) {
       window.location.href = '/login';
-    } else {
-      authService.initializeAuth();
-      fetchData();
+      return;
     }
+    
+    authService.initializeAuth();
+    fetchData();
   }, []);
 
   const fetchData = async () => {
@@ -46,7 +47,6 @@ function Menu() {
       setCategorias(categoryResponse.data);
     } catch (error) {
       console.error('Error fetching data:', error);
-      showToast('Error al cargar los datos. Intente nuevamente.', 'danger');
     } finally {
       setIsLoading(false);
     }
@@ -59,16 +59,19 @@ function Menu() {
     setFilteredMenu(filtered);
   }, [searchTerm, menuData]);
 
-  const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
-    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
-  };
-
   const handleViewDetails = (productoId) => {
     const producto = menuData.find(item => item.id === productoId);
     if (producto) {
       setCurrentMenuItem(producto);
       setShowDetailView(true);
+      
+      Swal.fire({
+        icon: 'info',
+        title: 'Detalle del producto',
+        text: `Visualizando ${producto.nombre}`,
+        timer: 1500,
+        showConfirmButton: false
+      });
     }
   };
 
@@ -85,7 +88,12 @@ function Menu() {
       }
 
       if (imageFile.size > 1024 * 1024) {
-        showToast('La imagen es demasiado grande. Máximo 1MB.', 'warning');
+        Swal.fire({
+          icon: 'warning',
+          title: 'Advertencia',
+          text: 'La imagen es demasiado grande. Máximo 1MB.',
+          confirmButtonText: 'Aceptar'
+        });
         resolve(currentImageUrl || "https://placehold.co/100x100.png");
         return;
       }
@@ -99,12 +107,6 @@ function Menu() {
   const handleSubmit = async (data, imagenFile, selectedCategorias) => {
     setIsLoading(true);
     try {
-      const categoriasSeleccionadas = selectedCategorias.map(cat => {
-        if (typeof cat === 'object' && cat.id) return { id: cat.id };
-        const categoriaObj = categorias.find(c => c.nombre === cat || c.id === cat);
-        return { id: categoriaObj.id };
-      });
-
       const imageUrl = await processImage(
         imagenFile,
         editingProduct?.imagen || null
@@ -115,31 +117,47 @@ function Menu() {
         precio: parseFloat(data.precio),
         descripcion: data.descripcion,
         imagen: imageUrl,
-        estado: true,
-        categorias: categoriasSeleccionadas
+        estado: editingProduct ? editingProduct.estado : true,
+        categorias: selectedCategorias.map(cat => typeof cat === 'object' ? { id: cat.id } : { id: cat })
       };
 
       let response;
 
-      if (editingProduct) {
+      if (editingProduct && editingProduct.id) {
         response = await axios.patch(
           `${API_URL}/producto/${editingProduct.id}`,
           productoData
         );
-        setMenuData(prev =>
-          prev.map(p => (p.id === editingProduct.id ? response.data : p))
-        );
-        showToast('Producto actualizado correctamente');
+        setMenuData(prev => prev.map(p => (p.id === editingProduct.id ? response.data : p)));
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Producto actualizado',
+          text: 'Producto actualizado correctamente',
+          confirmButtonText: 'Aceptar'
+        });
       } else {
         response = await axios.post(`${API_URL}/producto`, productoData);
         setMenuData(prev => [...prev, response.data]);
-        showToast('Producto añadido correctamente');
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Producto añadido',
+          text: 'Producto añadido correctamente',
+          confirmButtonText: 'Aceptar'
+        });
       }
 
+      await fetchData();
       closeModal();
     } catch (error) {
       console.error('Error al procesar el producto:', error);
-      showToast('Error al guardar el producto. Intente nuevamente.', 'danger');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error al guardar el producto. Intente nuevamente.',
+        confirmButtonText: 'Aceptar'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -147,41 +165,84 @@ function Menu() {
 
   const handleToggleEstado = async (producto) => {
     const nuevoEstado = !producto.estado;
-    setIsLoading(true);
 
-    try {
-      await axios.patch(`${API_URL}/producto/${producto.id}/estado`, { estado: nuevoEstado });
+    const confirmResult = await Swal.fire({
+      title: 'Cambiar estado',
+      text: `¿Estás seguro de que deseas cambiar el estado a ${nuevoEstado ? 'Activo' : 'Inactivo'}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cambiar',
+      cancelButtonText: 'Cancelar'
+    });
 
-      setMenuData(prevData => prevData.map(item => 
-        item.id === producto.id ? { ...item, estado: nuevoEstado } : item
-      ));
+    if (confirmResult.isConfirmed) {
+      setIsLoading(true);
+      try {
+        await axios.patch(`${API_URL}/producto/${producto.id}/estado`, { estado: nuevoEstado });
 
-      showToast(`Producto ${nuevoEstado ? 'activado' : 'desactivado'} correctamente`);
-    } catch (error) {
-      console.error('Error al actualizar estado:', error);
-      showToast('Error al cambiar el estado del producto', 'danger');
-    } finally {
-      setIsLoading(false);
+        setMenuData(prevData => prevData.map(item => 
+          item.id === producto.id ? { ...item, estado: nuevoEstado } : item
+        ));
+
+        Swal.fire({
+          icon: 'success',
+          title: nuevoEstado ? 'Producto activado' : 'Producto desactivado',
+          text: `Producto ${nuevoEstado ? 'activado' : 'desactivado'} correctamente`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+      } catch (error) {
+        console.error('Error al actualizar estado:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error al cambiar el estado del producto',
+          confirmButtonText: 'Aceptar'
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
-  const handleEdit = (producto) => {
+  const handleEdit = (productoIdOrObject) => {
+    if (typeof productoIdOrObject === 'string') {
+      const productoId = productoIdOrObject;
+      const producto = menuData.find(item => item.id === productoId);
+      
+      if (!producto) {
+        console.error(`Producto con ID ${productoId} no encontrado`);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: `No se encontró el producto con ID: ${productoId}`,
+          confirmButtonText: 'Aceptar'
+        });
+        return;
+      }
+      
+      setEditingProduct(producto);
+    } else {
+      setEditingProduct(productoIdOrObject);
+    }
+    
     setEditMode(true);
-    setEditingProduct({
-      ...producto,
-      selectedCategories: producto.categorias?.map(cat => cat.id) || []
+    setShowModal(true);
+    
+    Swal.fire({
+      icon: 'info',
+      title: 'Modo edición',
+      text: `Editando producto`,
+      timer: 1500,
+      showConfirmButton: false
     });
-    setShowModal(true); // <-- ¡Esto estaba faltando!
   };
-  
-  
 
   const closeModal = () => {
     setShowModal(false);
     setEditingProduct(null);
-    setEditMode(false); // <- importante resetear esto
+    setEditMode(false);
   };
-  
 
   return (
     <div className="d-flex">
@@ -190,7 +251,11 @@ function Menu() {
           <h3>Menú</h3>
           <Button 
             variant="danger" 
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setEditMode(false);
+              setEditingProduct(null);
+              setShowModal(true);
+            }}
             disabled={isLoading}
           >
             + Agregar
@@ -226,20 +291,15 @@ function Menu() {
           isLoading={isLoading}
         />
 
-<MenuForm 
-  showModal={showModal} 
-  closeModal={closeModal}
-  onSubmit={handleSubmit}
-  editMode={editMode}
-  currentProduct={editingProduct}
-  categorias={categorias}
-  isLoading={isLoading}
-  selectedCategories={editingProduct?.selectedCategories || []}
-  setSelectedCategories={(cats) =>
-    setEditingProduct(prev => ({ ...prev, selectedCategories: cats }))
-  }
-/>
-
+        <MenuForm 
+          showModal={showModal} 
+          closeModal={closeModal}
+          onSubmit={handleSubmit}
+          editMode={editMode}
+          currentProduct={editingProduct}
+          categorias={categorias}
+          isLoading={isLoading}
+        />
 
         {showDetailView && currentMenuItem && (
           <MenuDetails
@@ -247,23 +307,6 @@ function Menu() {
             onClose={handleCloseDetailView}
           />
         )}
-
-        <ToastContainer position="top-end" className="p-3">
-          <Toast 
-            show={toast.show} 
-            onClose={() => setToast(prev => ({...prev, show: false}))}
-            bg={toast.type}
-            delay={3000}
-            autohide
-          >
-            <Toast.Header closeButton>
-              <strong className="me-auto">Notificación</strong>
-            </Toast.Header>
-            <Toast.Body className={toast.type === 'danger' ? 'text-white' : ''}>
-              {toast.message}
-            </Toast.Body>
-          </Toast>
-        </ToastContainer>
       </div>
     </div>
   );

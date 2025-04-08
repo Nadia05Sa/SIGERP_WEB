@@ -27,7 +27,6 @@ function MenuDetails({ menu, onClose }) {
           </Col>
           <Col md={8}>
             <h3>{menu.nombre || 'Sin nombre'}</h3>
-            <p className="text-muted">ID: {menu.id}</p>
             
             <h5 className="mt-3">Precio:</h5>
             <p className="text-danger fw-bold">${menu.precio ? menu.precio.toFixed(2) : '0.00'}</p>

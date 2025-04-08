@@ -42,73 +42,50 @@ function Home() {
   };
       
 
-  // Función para generar datos para las gráficas a partir de ventas
   const generateChartData = () => {
+    // Días de la semana en español
+    const diasDisponibles = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"];
+  
     // Datos de respaldo en caso de que no haya ventas
-    const fallbackBarData = [
-      { day: "Lun", earnings: 0 },
-      { day: "Mar", earnings: 0 },
-      { day: "Mie", earnings: 0 }
-    ];
-    
-    // Inicializar datos de gráfico de barras con valores por defecto
-    let barData = fallbackBarData;
-    
+    let barData = diasDisponibles.map(dia => ({ day: dia, earnings: 0 }));
+  
     try {
       if (ventas.length > 0) {
         // Transformar datos de ventas para el gráfico de barras
-        barData = ventas
+        const ventasTransformadas = ventas
           .filter(venta => venta && venta.fecha) // Validar objetos de venta
           .map(venta => ({
-            day: new Date(venta.fecha).toLocaleDateString('es-ES', { weekday: 'short' }), // Abreviatura del día
-            earnings: Number(venta.beneficios || 0) // Usar el campo beneficios calculado por el backend
+            day: new Date(venta.fecha).toLocaleDateString('es-ES', { weekday: 'short' }).toLowerCase(), // Día abreviado
+            earnings: Number(venta.beneficios || 0) // Beneficios de la venta
           }));
-        
-        // Si después del procesamiento no hay datos, usar los de respaldo
-        if (barData.length === 0) {
-          barData = fallbackBarData;
-        }
+  
+        // Crear un mapa de días con ganancias acumuladas
+        const gananciasPorDia = new Map();
+        ventasTransformadas.forEach(venta => {
+          if (gananciasPorDia.has(venta.day)) {
+            gananciasPorDia.set(venta.day, gananciasPorDia.get(venta.day) + venta.earnings);
+          } else {
+            gananciasPorDia.set(venta.day, venta.earnings);
+          }
+        });
+  
+        // Actualizar barData con los valores obtenidos de las ventas
+        barData = diasDisponibles.map(dia => ({
+          day: dia,
+          earnings: gananciasPorDia.get(dia) || 0 // Si no hay datos, mantener ganancias en 0
+        }));
       }
     } catch (error) {
       console.error("Error generating bar chart data:", error);
-      barData = fallbackBarData; // Usar datos de respaldo en caso de error
       setChartError(true); // Marcar error en la gráfica
     }
-    
-    // Calcular ventas de día vs tarde según los campos específicos del modelo
-    let dayTotal = 0;
-    let nightTotal = 0;
-    
-    try {
-      if (ventas.length > 0) {
-        // Acumular totales según los campos específicos del modelo
-        ventas.forEach(venta => {
-          if (venta) {
-            dayTotal += Number(venta.ingresos_dia || 0);
-            nightTotal += Number(venta.ingresos_tarde || 0);
-          }
-        });
-      }
-      
-      // Valores por defecto si no hay datos
-      if (dayTotal === 0 && nightTotal === 0) {
-        dayTotal = 60;
-        nightTotal = 40;
-      }
-    } catch (error) {
-      console.error("Error generating pie chart data:", error);
-      // Valores por defecto en caso de error
-      dayTotal = 60;
-      nightTotal = 40;
-      setChartError(true); // Marcar error en la gráfica
-    }
-    
+  
     // Datos para el gráfico circular
     const pieData = [
-      { x: 'Día', y: dayTotal },
-      { x: 'Tarde', y: nightTotal }
+      { x: "Día", y: ventas.reduce((sum, venta) => sum + Number(venta.ingresos_dia || 0), 0) || 60 },
+      { x: "Tarde", y: ventas.reduce((sum, venta) => sum + Number(venta.ingresos_tarde || 0), 0) || 40 }
     ];
-    
+  
     return { barData, pieData };
   };
 
@@ -224,7 +201,7 @@ function Home() {
                   data={barData}
                   x="day"
                   y="earnings"
-                  style={{ data: { fill: 'maroon' } }} // Color de las barras
+                  style={{ data: { fill: "#D81B60" } }} // Color de las barras
                 />
               </VictoryChart>
             )}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Modal, Button, Form, Image } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -33,7 +33,7 @@ const schema = yup.object().shape({
 /**
  * MesaForm - Componente para agregar o editar una mesa
  */
-function MesaForm({ show, onHide, onSubmit = () => {}, mesa, editMode = false }) {
+function MesaForm({ show, onHide, onSave = () => {}, mesa, editMode = false }) {
   // Form setup with validation
   const {
     register,
@@ -42,23 +42,37 @@ function MesaForm({ show, onHide, onSubmit = () => {}, mesa, editMode = false })
     reset,
   } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: editMode && mesa ? {
-      mesa: mesa.nombre || '',
-      capacidad: mesa.capacidad || '',
-      estado: mesa.estado || 'Activo',
-      // No se puede precargar el archivo de imagen
-    } : {
+    defaultValues: {
+      mesa: '',
+      capacidad: '',
       estado: 'Activo'
     }
   });
+
+  // Efecto para actualizar el formulario cuando cambia la mesa en modo edición
+  useEffect(() => {
+    if (editMode && mesa) {
+      reset({
+        mesa: mesa.nombre || '',
+        capacidad: mesa.capacidad || '',
+        estado: mesa.estado ? 'Activo' : 'Inactivo'
+      });
+    } else if (!editMode) {
+      reset({
+        mesa: '',
+        capacidad: '',
+        estado: 'Activo'
+      });
+    }
+  }, [mesa, editMode, reset]);
 
   /**
    * Maneja el envío del formulario
    */
   const submitForm = (data) => {
     // Verificar que onSubmit sea una función antes de llamarla
-    if (typeof onSubmit === 'function') {
-      onSubmit(data);
+    if (typeof onSave === 'function') {
+      onSave(data);
     } else {
       console.error('Error: onSubmit prop is not a function');
     }
@@ -83,10 +97,10 @@ function MesaForm({ show, onHide, onSubmit = () => {}, mesa, editMode = false })
       <Modal.Body>
         <Form onSubmit={handleSubmit(submitForm)}>
           {/* Mostrar imagen existente en modo edición */}
-          {editMode && mesa && mesa.imagenUrl && (
+          {editMode && mesa && mesa.imagen && (
             <div className="d-flex justify-content-center mb-3">
               <Image
-                src={mesa.imagenUrl}
+                src={mesa.imagen}
                 alt="Imagen de la mesa"
                 className="rounded"
                 width="80"

@@ -50,7 +50,6 @@ const MeseroDetail = ({ empleado, mesasPorEmpleado, onClose }) => {
                 <Row className="mb-3">
                     <Col xs={12} md={6}>
                         <h5>Información Personal</h5>
-                        <p><strong>ID:</strong> {empleado.id}</p>
                         <p><strong>Nombre:</strong> {empleado.nombre}</p>
                         <p><strong>Apellido:</strong> {empleado.apellido}</p>
                         <p><strong>Correo:</strong> {empleado.correo}</p>

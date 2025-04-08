@@ -3,13 +3,13 @@ import { Modal, Button, Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
+import Swal from 'sweetalert2';
 
 // Esquema de validación con Yup
 const schema = yup.object().shape({
   nombre: yup.string().required('El nombre es obligatorio'),
   precio: yup.number().required('El precio es obligatorio').positive('Debe ser un número positivo'),
-  descripcion: yup.string().required('La descripción es obligatoria'),
-  categorias: yup.array().of(yup.string()).min(1, 'Selecciona al menos una categoría')
+  descripcion: yup.string().required('La descripción es obligatoria')
 });
 
 function MenuForm({ 
@@ -18,7 +18,8 @@ function MenuForm({
   onSubmit, 
   editMode, 
   currentProduct, 
-  categorias 
+  categorias,
+  isLoading 
 }) {
   const [selectedCategorias, setSelectedCategorias] = useState([]);
   const [imagenPreview, setImagenPreview] = useState(null);
@@ -31,25 +32,42 @@ function MenuForm({
 
   // Inicializar formulario cuando se edita un producto
   useEffect(() => {
-    if (editMode && currentProduct) {
-      setValue('nombre', currentProduct.nombre);
-      setValue('precio', currentProduct.precio);
-      setValue('descripcion', currentProduct.descripcion);
-      setSelectedCategorias(currentProduct.categorias || []);
-    } else {
-      reset();
-      setSelectedCategorias([]);
+    if (showModal) {
+      if (editMode && currentProduct) {
+        console.log("Setting up form for edit mode with product:", currentProduct);
+        
+        // Establecer valores del formulario
+        setValue('nombre', currentProduct.nombre || '');
+        setValue('precio', currentProduct.precio || '');
+        setValue('descripcion', currentProduct.descripcion || '');
+        
+        // Establecer la imagen de vista previa
+        if (currentProduct.imagen) {
+          setImagenPreview(currentProduct.imagen);
+        } else {
+          setImagenPreview(null);
+        }
+        
+        // Establecer categorías seleccionadas
+        setSelectedCategorias(currentProduct.categorias || []);
+      } else {
+        // Limpiar el formulario para un nuevo producto
+        reset({
+          nombre: '',
+          precio: '',
+          descripcion: ''
+        });
+        setSelectedCategorias([]);
+        setImagenPreview(null);
+        setImagenFile(null);
+      }
     }
-    
-    // Limpiar la imagen previa al abrir/cerrar el modal
-    setImagenFile(null);
-    setImagenPreview(null);
-  }, [editMode, currentProduct, setValue, reset]);
+  }, [showModal, editMode, currentProduct, setValue, reset]);
 
   // Validar la imagen
   const validateImage = (file) => {
     if (!file) {
-      return 'La imagen es obligatoria';
+      return editMode ? '' : 'La imagen es obligatoria';
     }
     
     if (file.size > 2000000) {
@@ -72,7 +90,7 @@ function MenuForm({
       if (error) {
         setImageError(error);
         setImagenFile(null);
-        setImagenPreview(null);
+        // No mostramos SweetAlert aquí
       } else {
         setImageError('');
         setImagenFile(file);
@@ -81,67 +99,51 @@ function MenuForm({
     }
   };
 
+  // Función para verificar si una categoría está seleccionada
+  const isCategoriaSelected = (categoria) => {
+    return selectedCategorias.some(cat => 
+      (typeof cat === 'object' ? cat.id === categoria.id : cat === categoria.id)
+    );
+  };
+
   // Función para manejar la selección de categorías
   const toggleCategoria = (categoria) => {
-    if (editMode) {
-      // En modo edición, trabajamos con objetos de categoría completos
-      setSelectedCategorias(prev => {
-        const catId = categoria.id;
-        if (prev.some(cat => cat.id === catId)) {
-          return prev.filter(cat => cat.id !== catId);
-        } else {
-          return [...prev, categoria];
-        }
-      });
-    } else {
-      // En modo agregar, trabajamos con nombres de categoría
-      setSelectedCategorias(prev => {
-        const catNombre = categoria.nombre;
-        if (prev.includes(catNombre)) {
-          return prev.filter(cat => cat !== catNombre);
-        } else {
-          return [...prev, catNombre];
-        }
-      });
-    }
+    setSelectedCategorias(prev => {
+      if (isCategoriaSelected(categoria)) {
+        return prev.filter(cat => 
+          (typeof cat === 'object' ? cat.id !== categoria.id : cat !== categoria.id)
+        );
+      } else {
+        return [...prev, categoria];
+      }
+    });
   };
 
   // Manejar envío del formulario
   const handleFormSubmit = (data) => {
-    // Validar que haya una imagen seleccionada si no estamos editando
-    if (!editMode && !imagenFile) {
+    // En modo edición, no requerimos una nueva imagen
+    if (!editMode && !imagenFile && !imagenPreview) {
       setImageError('La imagen es obligatoria');
+      return;
+    }
+    
+    // Validar que haya al menos una categoría seleccionada
+    if (selectedCategorias.length === 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Categorías requeridas',
+        text: 'Selecciona al menos una categoría'
+      });
       return;
     }
 
     onSubmit(data, imagenFile, selectedCategorias);
   };
 
-  // Renderizar previsualización de imagen
-  const renderImagePreview = () => {
-    if (!imagenPreview) return null;
-    
-    return (
-      <div className="mt-2 text-center">
-        <img 
-          src={imagenPreview} 
-          alt="Vista previa" 
-          className="rounded" 
-          style={{ maxHeight: "100px" }} 
-          onLoad={() => {
-            // Este callback se ejecutará cuando la imagen se cargue
-            return () => URL.revokeObjectURL(imagenPreview);
-          }}
-        />
-      </div>
-    );
-  };
-
   // Manejar cierre del modal y resetear estados
   const handleClose = () => {
     reset();
     setImagenFile(null);
-    setImagenPreview(null);
     setImageError('');
     closeModal();
   };
@@ -161,7 +163,23 @@ function MenuForm({
               onChange={handleImageChange}
             />
             {imageError && <small className="text-danger">{imageError}</small>}
-            {renderImagePreview()}
+            
+            {/* Mostrar imagen actual o previsualización */}
+            {(imagenPreview || (editMode && currentProduct?.imagen)) && (
+              <div className="mt-2 text-center">
+                <img 
+                  src={imagenPreview || currentProduct?.imagen} 
+                  alt="Vista previa" 
+                  className="rounded" 
+                  style={{ maxHeight: "100px" }}
+                />
+                {imagenPreview && !imagenFile && editMode && (
+                  <div className="mt-1">
+                    <small className="text-muted">Imagen actual</small>
+                  </div>
+                )}
+              </div>
+            )}
           </Form.Group>
 
           <Form.Group className="mb-3">
@@ -188,11 +206,7 @@ function MenuForm({
               {categorias.map((cat) => (
                 <div key={cat.id} className="col-6 mb-2">
                   <Button
-                    variant={
-                      editMode
-                        ? selectedCategorias.some(c => c.id === cat.id) ? 'danger' : 'outline-danger'
-                        : selectedCategorias.includes(cat.nombre) ? 'danger' : 'outline-danger'
-                    }
+                    variant={isCategoriaSelected(cat) ? 'danger' : 'outline-danger'}
                     className="w-100 rounded-pill"
                     onClick={() => toggleCategoria(cat)}
                     type="button"
@@ -202,12 +216,18 @@ function MenuForm({
                 </div>
               ))}
             </div>
-            {errors.categorias && <small className="text-danger">{errors.categorias.message}</small>}
+            {selectedCategorias.length === 0 && (
+              <small className="text-danger">Selecciona al menos una categoría</small>
+            )}
           </Form.Group>
 
           <Modal.Footer>
-            <Button variant="secondary" onClick={handleClose} type="button">Cancelar</Button>
-            <Button variant="danger" type="submit">{editMode ? 'Actualizar' : 'Agregar'}</Button>
+            <Button variant="secondary" onClick={handleClose} type="button" disabled={isLoading}>
+              Cancelar
+            </Button>
+            <Button variant="danger" type="submit" disabled={isLoading}>
+              {isLoading ? 'Procesando...' : (editMode ? 'Actualizar' : 'Agregar')}
+            </Button>
           </Modal.Footer>
         </Form>
       </Modal.Body>

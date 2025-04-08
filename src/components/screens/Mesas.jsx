@@ -67,11 +67,16 @@ function GestionMesas() {
       });
       return response.data;
     } catch (error) {
-      console.error("Error al obtener la mesa:", error);
+      if (error.response && error.response.status === 403) {
+        console.error("Acceso denegado: Token no autorizado o expirado.");
+        alert("No tienes permisos para ver esta mesa. Por favor inicia sesión nuevamente.");
+      } else {
+        console.error("Error al obtener la mesa:", error);
+      }
       return null;
     }
   };
-  
+
   const handleViewDetails = async (mesaId) => {
     const mesa = await getMesaById(mesaId);
     if (mesa) {
@@ -151,44 +156,22 @@ function GestionMesas() {
         imagen: imageUrl,
         estado: data.estado === "Activo",
       };
-
-      // Use the appropriate method based on whether we're in edit mode or creating new
-      const method = editMode ? "patch" : "post";
-      const endpoint = editMode ? `/${currentMesa.id}` : "";
-      
-      const config = getRequestConfig(method, endpoint, newMesaData);
-      
+      const config = getRequestConfig(editMode ? "put" : "post", editMode ? `/${currentMesa.id}` : "", newMesaData);
       axios
         .request(config)
         .then(() => {
-          fetchMesas(); // Refresh table list
-          setShowModal(false); // Close modal
-          Swal.fire({
-            title: editMode ? 'Mesa actualizada!' : 'Mesa creada!',
-            text: editMode ? 'La mesa ha sido actualizada correctamente.' : 'La mesa ha sido creada correctamente.',
-            icon: 'success',
-            timer: 2000
-          });
+          fetchMesas();
+          setShowModal(false);
         })
-        .catch((error) => {
-          console.error("Error:", error.message);
-          Swal.fire({
-            title: 'Error!',
-            text: `No se pudo ${editMode ? 'actualizar' : 'crear'} la mesa.`,
-            icon: 'error'
-          });
-        });
+        .catch(console.error);
     };
 
-    // Handle image
     if (data.img && data.img[0]) {
       const reader = new FileReader();
       reader.onloadend = () => processSubmission(reader.result);
       reader.readAsDataURL(data.img[0]);
     } else {
-      // If in edit mode and no new image is provided, use the existing image
-      const imageUrl = editMode && currentMesa.imagen ? currentMesa.imagen : "https://placehold.co/100x100.png";
-      processSubmission(imageUrl);
+      processSubmission("https://placehold.co/100x100.png");
     }
   };
 

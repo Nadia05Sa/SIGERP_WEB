@@ -7,6 +7,7 @@ import MeseroList from './mesero/MeseroList';
 import MeseroDetail from './mesero/MeseroDetail';
 import MeseroForm from './mesero/MeseroForm';
 import { useDebounce } from 'use-debounce'; // Importar useDebounce
+import Swal from 'sweetalert2'; // Importar SweetAlert2
 import '../../App.css';
 import authService from '../../service/authService';
 
@@ -32,9 +33,8 @@ const EmpleadoForm = () => {
     const [showDetailView, setShowDetailView] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [currentEmpleado, setCurrentEmpleado] = useState(null);
-      const [authToken, setAuthToken] = useState("");
-    
-    
+    const [authToken, setAuthToken] = useState("");
+
     // In a real app, this should come from an auth context or environment variable
 
     /**
@@ -162,41 +162,59 @@ const EmpleadoForm = () => {
      * Maneja el cambio de estado (activo/inactivo) de un empleado
      */
     const handleToggleEstado = async (empleado) => {
-        try {
-            // Preparar datos para la solicitud
-            const nuevoEstado = !empleado.estado;
-            const data = JSON.stringify({
-                "estado": nuevoEstado
-            });
-            
-            // Configuración de la solicitud
-            const config = {
-                method: 'patch',
-                url: `${API_URL}/${empleado.id}/estado`,
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'Authorization': `Bearer ${authToken}`
-                },
-                data: data
-            };
-            
-            // Realizar la solicitud
-            const response = await axios(config);
-            console.log("Estado actualizado:", JSON.stringify(response.data));
-            
-            // Actualizar el estado local
-            setMeseros(meseros.map(mesero => 
-                mesero.id === empleado.id 
-                    ? { ...mesero, estado: nuevoEstado } 
-                    : mesero
-            ));
-            
-            // Mostrar mensaje de éxito
-            alert(`Estado del empleado ${empleado.nombre} actualizado correctamente`);
-            
-        } catch (error) {
-            console.error("Error al cambiar el estado:", error);
-            alert(`Error al cambiar el estado: ${error.response?.data?.message || error.message}`);
+        const nuevoEstado = !empleado.estado;
+        const confirmResult = await Swal.fire({
+            title: 'Cambiar estado',
+            text: `¿Estás seguro de que deseas cambiar el estado a ${nuevoEstado ? 'Activo' : 'Inactivo'}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, cambiar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (confirmResult.isConfirmed) {
+            try {
+                // Preparar datos para la solicitud
+                const data = JSON.stringify({
+                    "estado": nuevoEstado
+                });
+                
+                // Configuración de la solicitud
+                const config = {
+                    method: 'patch',
+                    url: `${API_URL}/${empleado.id}/estado`,
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    data: data
+                };
+                
+                // Realizar la solicitud
+                await axios(config);
+                
+                // Actualizar el estado local
+                setMeseros(meseros.map(mesero => 
+                    mesero.id === empleado.id 
+                        ? { ...mesero, estado: nuevoEstado } 
+                        : mesero
+                ));
+                
+                // Mostrar mensaje de éxito
+                Swal.fire(
+                    'Estado cambiado!',
+                    `El estado del empleado ${empleado.nombre} ha sido cambiado a ${nuevoEstado ? 'Activo' : 'Inactivo'}.`,
+                    'success'
+                );
+                
+            } catch (error) {
+                console.error("Error al cambiar el estado:", error);
+                Swal.fire(
+                    'Error!',
+                    'No se pudo cambiar el estado del empleado.',
+                    'error'
+                );
+            }
         }
     };
 
@@ -251,7 +269,11 @@ const EmpleadoForm = () => {
             handleCloseModal();
         } catch (error) {
             console.error(`Error al ${editMode ? 'actualizar' : 'registrar'} mesero`, error);
-            alert(`Error al ${editMode ? 'actualizar' : 'registrar'} mesero: ${error.response?.data?.message || error.message}`);
+            Swal.fire(
+                'Error!',
+                `Error al ${editMode ? 'actualizar' : 'registrar'} mesero: ${error.response?.data?.message || error.message}`,
+                'error'
+            );
         }
     };
 
@@ -265,22 +287,22 @@ const EmpleadoForm = () => {
             {/* Header con título y botón para agregar */}
             <div className="d-flex justify-content-between align-items-center">
                 <h3>Gestión de Meseros</h3>
-
-                {/* Barra de búsqueda */}
-                <InputGroup className="mb-3 w-50">
-                    <InputGroup.Text className="bg-danger text-white">
-                        <FaSearch />
-                    </InputGroup.Text>
-                    <Form.Control
-                        type="text"
-                        placeholder="Buscar por nombre de Meseros..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </InputGroup>
                 <Button className="btn btn-danger" onClick={handleAddNew}>+ Agregar</Button>
             </div>
             <hr/>
+              {/* Barra de búsqueda */}
+              <InputGroup className="mb-3">
+                <InputGroup.Text className="bg-danger text-white">
+                    <FaSearch />
+                </InputGroup.Text>
+                <Form.Control
+                    type="text"
+                    placeholder="Buscar por nombre de Meseros..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </InputGroup>
+
             {/* Lista de meseros */}
             <MeseroList 
                 meseros={filteredMeseros} 
