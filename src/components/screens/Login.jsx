@@ -64,12 +64,12 @@ export default function Form() {
             <div className="row text-light rounded shadow-lg overflow-hidden" style={{backgroundColor:'#FFF'}} >
                 {/* Imagen */}
                 <div className="col-md-6 p-4 d-flex align-items-center justify-content-center " style={{backgroundColor:'#FFF'}}>
-                    <img src={logoCompleto} alt="SIGERP RESTAURANTE" className="img-fluid" style={{ maxWidth: '80%' }} />
+                    <img src={logoCompleto} alt="SIGERM RESTAURANTE" className="img-fluid" style={{ maxWidth: '80%' }} />
                 </div>
                 
                 {/* Formulario */}
                 <div className="col-md-6 p-4">
-                    <h3 className="text-center mb-4" style={{color:'#000'}}>SIGERP RESTAURANTE</h3>
+                    <h3 className="text-center mb-4" style={{color:'#000'}}>SIGERM RESTAURANTE</h3>
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <div className="mb-3">
                             <label htmlFor="email" className="form-label" style={{color:'#000'}}>Correo:</label>
