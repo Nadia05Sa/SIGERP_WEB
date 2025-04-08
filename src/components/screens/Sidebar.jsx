@@ -13,7 +13,8 @@ function Sidebar() {
   const location = useLocation(); // Obtén la ruta actual
 
   // Función para determinar si la ruta está activa
-  const isActive = (path) => location.pathname === path || (location.pathname === '' && path === '/home');
+  const isActive = (path) => location.pathname === path ;
+  console.log(location.pathname); // Para depuración, puedes ver la ruta actual en la consola
 
   return (
     <div
@@ -107,9 +108,9 @@ function Sidebar() {
         </li>
         <li>
           <Link
-            to="/reseñas"
+            to="/resenas"
             className="nav-link text-white"
-            style={{ backgroundColor: isActive('/reseñas') ? '#F47497' : 'transparent' }}
+            style={{ backgroundColor: isActive('/resenas') ? '#F47497' : 'transparent' }}
           >
             <img
               src={reseñas}

@@ -42,7 +42,14 @@ function HomePDF({ ventas }) {
         fontSize: 10,
         cellPadding: 3,
         halign: 'center',
-        valign: 'middle'
+        valign: 'middle',
+        textColor: [0, 0, 0], // Color del texto en el encabezado
+        fillColor: [255, 240, 240] // Color de fondo alterno para las filas
+      },
+      headStyles: {
+        fillColor: [244, 116, 151], // Color de fondo del encabezado
+        textColor: [255, 255, 255], // Color del texto en el encabezado
+        fontStyle: 'bold'
       },
       startY: 20
     });

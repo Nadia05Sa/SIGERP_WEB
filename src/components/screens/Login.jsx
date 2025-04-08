@@ -5,11 +5,14 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import logoCompleto from './../img/LogoCompleto.png';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export default function Form() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [loginError, setLoginError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    
 
     // Invalidar el token al cargar el componente
     useEffect(() => {
@@ -46,7 +49,7 @@ export default function Form() {
             axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
 
             // Navigate to home page after successful login
-            navigate('/Home');
+            navigate('/home');
 
         } catch (error) {
             console.error("Login error:", error);
@@ -80,16 +83,27 @@ export default function Form() {
                             {errors.email && <div className="text-warning small">{errors.email.message}</div>}
                         </div>
                         <div className="mb-3">
-                            <label htmlFor="password" className="form-label" style={{color:'#000'}}>Contraseña:</label>
+                            <label htmlFor="password" className="form-label" style={{ color: '#000' }}>Contraseña:</label>
+                            <div className="input-group">
                             <input
                                 id="password"
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 placeholder="Contraseña"
                                 {...register("password")}
                                 className="form-control"
                             />
+                            <button 
+                                type="button" 
+                                className="btn btn-outline-danger border-1"
+                                style={{ borderColor: '#DDD' }}
+                                onClick={() => setShowPassword(!showPassword)}
+                            >
+                                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                            </button>
+                            </div>
                             {errors.password && <div className="text-warning small">{errors.password.message}</div>}
                         </div>
+
                         {loginError && <div className="alert alert-danger">{loginError}</div>}
                         <button
                             type="submit"

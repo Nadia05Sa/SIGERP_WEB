@@ -6,6 +6,7 @@ import {
   IoCheckmarkCircleOutline,
   IoCloseCircleOutline,
 } from "react-icons/io5";
+import "../../../App.css";
 
 function MesaList({ mesas, searchTerm, onView, onEdit, onToggleEstado }) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -130,23 +131,6 @@ function MesaList({ mesas, searchTerm, onView, onEdit, onToggleEstado }) {
           />
         </Pagination>
       </div>
-
-      {/* Estilos personalizados */}
-      <style jsx>{`
-        .pagination-danger .page-item.active .page-link {
-          background-color: #dc3545 !important;
-          border-color: #dc3545 !important;
-          color: white !important;
-        }
-
-        .pagination-danger .page-link {
-          color: #dc3545 !important;
-        }
-
-        .pagination-danger .page-link:focus {
-          box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
-        }
-      `}</style>
     </>
   );
 }

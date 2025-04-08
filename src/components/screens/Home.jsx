@@ -159,8 +159,6 @@ function Home() {
   // Renderizado del componente
   return (
     <div className="d-flex bg-light">
-      {/* Barra lateral de navegación */}
-      <Sidebar />
       
       {/* Contenido principal */}
       <div className="container-fluid p-4" id="adminPanel">

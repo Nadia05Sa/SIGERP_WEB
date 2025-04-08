@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { IoEyeOutline } from 'react-icons/io5';
 import { InputGroup, Form, Pagination } from 'react-bootstrap';
 import { FaSearch } from 'react-icons/fa';
+import "../../../App.css";
 
 function HomeList({ data, isLoading, onViewVenta }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -136,24 +137,6 @@ function HomeList({ data, isLoading, onViewVenta }) {
         </div>
       )}
       
-      {/* Estilos CSS en línea */}
-      <style type="text/css">
-        {`
-          .custom-active-page .page-link {
-            background-color: #dc3545 !important;
-            border-color: #dc3545 !important;
-            color: white !important;
-          }
-          
-          .pagination .page-link {
-            color: #dc3545;
-          }
-          
-          .pagination .page-link:focus {
-            box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
-          }
-        `}
-      </style>
     </div>
   );
 }

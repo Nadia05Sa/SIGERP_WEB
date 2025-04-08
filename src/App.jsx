@@ -75,7 +75,7 @@ function MainLayout() {
                 <Productos />
               </ProtectedRoute>
             } />
-            <Route path="/reseñas" element={
+            <Route path="/resenas" element={
               <ProtectedRoute>
                 <Reseñas />
               </ProtectedRoute>

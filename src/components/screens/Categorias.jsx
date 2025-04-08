@@ -422,27 +422,51 @@ function Categorias() {
         </tbody>
       </Table>
 
-      <div className="d-flex justify-content-end mt-3">
-        <Pagination>
-          <Pagination.Prev
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          />
-          {Array.from({ length: totalPages }, (_, idx) => (
-            <Pagination.Item
-              key={idx + 1}
-              active={idx + 1 === currentPage}
-              onClick={() => handlePageChange(idx + 1)}
-            >
-              {idx + 1}
-            </Pagination.Item>
-          ))}
-          <Pagination.Next
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages || totalPages === 0}
-          />
-        </Pagination>
-      </div>
+       {/* Paginación */}
+            <div className="d-flex justify-content-end mt-3">
+              <Pagination className="pagination-danger">
+                <Pagination.Prev
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="page-item"
+                />
+      
+                {Array.from({ length: Math.min(3, totalPages) }).map((_, idx) => {
+                  let pageNum;
+                  if (currentPage <= 2) {
+                    pageNum = idx + 1;
+                  } else if (currentPage >= totalPages - 1) {
+                    pageNum = totalPages - 2 + idx;
+                  } else {
+                    pageNum = currentPage - 1 + idx;
+                  }
+      
+                  if (pageNum > 0 && pageNum <= totalPages) {
+                    return (
+                      <Pagination.Item
+                        key={pageNum}
+                        active={pageNum === currentPage}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={
+                          pageNum === currentPage
+                            ? "bg-danger border-danger active"
+                            : ""
+                        }
+                      >
+                        {pageNum}
+                      </Pagination.Item>
+                    );
+                  }
+                  return null;
+                })}
+      
+                <Pagination.Next
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="page-item"
+                />
+              </Pagination>
+            </div>
 
       <Modal show={showModal} onHide={handleCloseModal}>
         <Modal.Header closeButton>

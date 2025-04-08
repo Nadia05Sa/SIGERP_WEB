@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Pagination } from 'react-bootstrap';
 import { IoEyeOutline, IoCreateOutline, IoCheckmarkCircleOutline, IoCloseCircleOutline } from 'react-icons/io5';
+import "../../../App.css";
 
 /**
  * MenuList - Componente que muestra la tabla de menú con acciones y paginación simplificada
@@ -204,24 +205,6 @@ const MenuList = ({ menu, onView, onEdit, onToggleStatus }) => {
                 </div>
             )}
 
-            {/* Estilos CSS en línea */}
-            <style type="text/css">
-                {`
-                    .custom-active-page .page-link {
-                        background-color: #dc3545 !important;
-                        border-color: #dc3545 !important;
-                        color: white !important;
-                    }
-                    
-                    .pagination .page-link {
-                        color: #dc3545;
-                    }
-                    
-                    .pagination .page-link:focus {
-                        box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
-                    }
-                `}
-            </style>
         </>
     );
 };

@@ -245,8 +245,6 @@ function Reseñas() {
   
   return (
     <div className="d-flex">
-      {/* Barra lateral */}
-      <Sidebar />
       
       {/* Contenido principal */}
       <div className="container-fluid p-4">
@@ -309,7 +307,7 @@ function Reseñas() {
         <div className="mb-4">
           <div className="btn-group">
             <button 
-              className={`btn ${filtro === 'todas' ? 'btn-primary' : 'btn-outline-primary'}`}
+              className={`btn ${filtro === 'todas' ? 'btn-danger' : 'btn-outline-danger'}`}
               onClick={() => setFiltro('todas')}
             >
               Todas
@@ -317,7 +315,7 @@ function Reseñas() {
             {[5, 4, 3, 2, 1].map(estrellas => (
               <button 
                 key={estrellas}
-                className={`btn ${filtro === estrellas.toString() ? 'btn-primary' : 'btn-outline-primary'}`}
+                className={`btn ${filtro === estrellas.toString() ? 'btn-danger' : 'btn-outline-danger'}`}
                 onClick={() => setFiltro(estrellas.toString())}
               >
                 {estrellas} ★
