@@ -13,10 +13,6 @@ const schema = yup.object().shape({
     nombre: yup.string().required('El nombre es obligatorio'),
     apellidos: yup.string().required('Los apellidos son obligatorios'),
     correo: yup.string().email('Correo inválido').required('El correo es obligatorio'),
-    contrasena: yup.string().min(4, 'Mínimo 4 caracteres').required('La contraseña es obligatoria'),
-    confirmarContrasena: yup.string()
-        .oneOf([yup.ref('contrasena')], 'Las contraseñas no coinciden')
-        .required('Debes confirmar la contraseña'),
     estado: yup.boolean().required('El estado es obligatorio'),
     mesas: yup.array().min(1, 'Selecciona al menos una mesa')
 });

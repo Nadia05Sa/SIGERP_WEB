@@ -53,10 +53,12 @@ function Menu() {
   };
 
   useEffect(() => {
-    const filtered = menuData.filter(item => 
-      item.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredMenu(filtered);
+    if (Array.isArray(menuData)) {
+      const filtered = menuData.filter(item =>
+        item.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredMenu(filtered);
+    }
   }, [searchTerm, menuData]);
 
   const handleViewDetails = (productoId) => {

@@ -10,7 +10,7 @@ import Categorias from './components/screens/Categorias';
 import Productos from './components/screens/Menu';
 import Reseñas from './components/screens/Reseñas';
 import authService from './service/authService';
-import Reseña from './components/screens/reseña/Reseña';
+import Resena from './components/screens/reseña/Reseña';
 
 // Custom ProtectedRoute component
 const ProtectedRoute = ({ children }) => {
@@ -39,8 +39,9 @@ function App() {
 function MainLayout() {
   const location = useLocation(); // Obtén la ruta actual
 
-  // Condiciona la visualización del Sidebar
-  const showSidebar = location.pathname !== '/';
+  // Rutas donde NO quieres mostrar el sidebar (puedes añadir más si es necesario)
+  const hideSidebarRoutes = ['/', '/resena'];
+  const showSidebar = !hideSidebarRoutes.includes(location.pathname);
 
   return (
     <div className="d-flex" style={{ height: '100%' }}>
@@ -50,37 +51,39 @@ function MainLayout() {
       {/* Main Content */}
       <div style={{ marginLeft: showSidebar ? '250px' : '0', width: '100%' }}>
         <Routes>
-            <Route path="/" element={<Login />} />
-            <Route path="/home" element={
-              <ProtectedRoute>
-                <Home />
-              </ProtectedRoute>
-            } />
-            <Route path="/meseros" element={
-              <ProtectedRoute>
-                <Meseros />
-              </ProtectedRoute>
-            } />
-            <Route path="/mesas" element={
-              <ProtectedRoute>
-                <Mesas />
-              </ProtectedRoute>
-            } />
-            <Route path="/categorias" element={
-              <ProtectedRoute>
-                <Categorias />
-              </ProtectedRoute>
-            } />
-            <Route path="/productos" element={
-              <ProtectedRoute>
-                <Productos />
-              </ProtectedRoute>
-            } />
-            <Route path="/resenas" element={
-              <ProtectedRoute>
-                <Reseñas />
-              </ProtectedRoute>
-            } />
+          <Route path="/" element={<Login />} />
+          <Route path="/resena" element={<Resena />} />
+
+          <Route path="/home" element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          } />
+          <Route path="/meseros" element={
+            <ProtectedRoute>
+              <Meseros />
+            </ProtectedRoute>
+          } />
+          <Route path="/mesas" element={
+            <ProtectedRoute>
+              <Mesas />
+            </ProtectedRoute>
+          } />
+          <Route path="/categorias" element={
+            <ProtectedRoute>
+              <Categorias />
+            </ProtectedRoute>
+          } />
+          <Route path="/productos" element={
+            <ProtectedRoute>
+              <Productos />
+            </ProtectedRoute>
+          } />
+          <Route path="/resenas" element={
+            <ProtectedRoute>
+              <Reseñas />
+            </ProtectedRoute>
+          } />            
         </Routes>
       </div>
     </div>
