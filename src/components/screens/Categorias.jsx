@@ -333,7 +333,6 @@ function Categorias() {
                  class="rounded mb-3" 
                  style="max-height: 150px; max-width: 150px;">
             <p><strong>Estado:</strong> ${estadoText}</p>
-            <p><strong>ID:</strong> ${categoria.id}</p>
           </div>
         `,
         confirmButtonColor: '#dc3545',

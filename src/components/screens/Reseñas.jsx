@@ -127,7 +127,7 @@ const ReseñaItem = ({ reseña, index }) => {
           </div>
           <div className="w-100">
             <div className="d-flex justify-content-between align-items-center">
-              <h5>{nombre}</h5>
+              <p>Mesero: {nombre}</p>
             </div>
             <p className="mt-2">{comentario}</p>
           </div>

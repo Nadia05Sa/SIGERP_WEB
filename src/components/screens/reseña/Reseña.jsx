@@ -72,7 +72,7 @@ export default function Reseña() {
 
   const onSubmit = async (data) => {
     if (!empleadoId || !mesaId) {
-      alert("Faltan datos en la URL (empleadoId o mesaId)");
+      alert("Faltan datos necesarios para enviar la reseña.");
       return;
     }
 
@@ -82,7 +82,9 @@ export default function Reseña() {
       empleado: { id: empleadoId },
       mesa: { id: mesaId }
     };
+
     console.log("Reseña a enviar:", resena);
+    
     try {
       const response = await axios.post("http://localhost:8080/api/resena", resena);
       console.log("Reseña guardada:", response.data);
