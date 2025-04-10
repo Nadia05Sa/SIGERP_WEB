@@ -163,7 +163,23 @@ function GestionMesas() {
           fetchMesas();
           setShowModal(false);
         })
-        .catch(console.error);
+        .catch((error) => {
+          // Verifica si el error es debido a un nombre duplicado
+          if (error.response && error.response.status === 400 && error.response.data.message.includes("Ya existe una mesa con el nombre: ", data.mesa)) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error!',
+              text: 'Ya existe una mesa con el mismo nombre. Por favor, elige otro.',
+            });
+          } else {
+            console.error(error);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error!',
+              text: 'Ocurrió un error al intentar guardar la mesa.',
+            });
+          }
+        });
     };
 
     if (data.img && data.img[0]) {
