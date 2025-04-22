@@ -8,7 +8,7 @@ import { IoEyeOutline, IoCheckmarkCircleOutline, IoCloseCircleOutline } from 're
 import authService from '../../service/authService';
 import Swal from 'sweetalert2'; // Import SweetAlert2
 
-const API_URL = 'http://localhost:8080/api/categoria';
+const API_URL = 'https://gmm0ermcb9.execute-api.us-east-1.amazonaws.com/api/categoria';
 
 function Categorias() {
   const [categoriasData, setCategoriasData] = useState([]);
@@ -238,7 +238,7 @@ function Categorias() {
     const config = {
       method: 'patch',
       maxBodyLength: Infinity,
-      url: `http://localhost:8080/api/categoria/${categoria.id}/estado`, // Usar el ID de la categoría
+      url: `https://gmm0ermcb9.execute-api.us-east-1.amazonaws.com/api/categoria/${categoria.id}/estado`, // Usar el ID de la categoría
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authService.getCurrentToken()}` // Asegúrate de incluir el token de autorización

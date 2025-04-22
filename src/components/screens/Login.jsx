@@ -33,7 +33,7 @@ export default function Form() {
 
         try {
             // API call to login endpoint
-            const response = await axios.post('http://localhost:8080/auth/login', {
+            const response = await axios.post('https://gmm0ermcb9.execute-api.us-east-1.amazonaws.com/auth/login', {
                 username: data.email,
                 password: data.password
             }, {

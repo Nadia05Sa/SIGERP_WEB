@@ -12,8 +12,8 @@ import '../../App.css';
 import authService from '../../service/authService';
 
 // API endpoints
-const API_URL = 'http://localhost:8080/api/empleado';
-const MESAS_API_URL = 'http://localhost:8080/api/mesas';
+const API_URL = 'https://gmm0ermcb9.execute-api.us-east-1.amazonaws.com/api/empleado';
+const MESAS_API_URL = 'https://gmm0ermcb9.execute-api.us-east-1.amazonaws.com/api/mesas';
 
 // Default image URL
 const DEFAULT_IMAGE_URL = 'https://placehold.co/100x100.png';

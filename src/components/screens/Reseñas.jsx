@@ -159,7 +159,7 @@ function Reseñas() {
         
         const config = {
           method: 'get',
-          url: 'http://localhost:8080/api/resena',
+          url: 'https://gmm0ermcb9.execute-api.us-east-1.amazonaws.com/api/resena',
           headers: { 
             'Content-Type': 'application/json'
           }

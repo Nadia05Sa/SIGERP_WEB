@@ -10,7 +10,7 @@ import MenuForm from './menu/MenuForm';
 import MenuDetails from './menu/MenuDetail';
 import Swal from 'sweetalert2';
 
-const API_URL = 'http://localhost:8080/api';
+const API_URL = 'https://gmm0ermcb9.execute-api.us-east-1.amazonaws.com/api';
 
 function Menu() {
   const [menuData, setMenuData] = useState([]);

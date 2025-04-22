@@ -30,7 +30,7 @@ function Home() {
   const fetchVentas = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get('http://localhost:8080/api/ventas/todas');
+      const response = await axios.get('https://gmm0ermcb9.execute-api.us-east-1.amazonaws.com/api/ventas/todas');
       setVentas(response.data || []);
     } catch (error) {
       console.error("Error fetching sales data:", error);

@@ -86,7 +86,7 @@ export default function Reseña() {
     console.log("Reseña a enviar:", resena);
     
     try {
-      const response = await axios.post("http://localhost:5173/resena", resena);
+      const response = await axios.post("https://gmm0ermcb9.execute-api.us-east-1.amazonaws.com/resena", resena);
       console.log("Reseña guardada:", response.data);
       alert("¡Gracias por tu reseña!");
       reset();

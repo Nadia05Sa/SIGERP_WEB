@@ -46,7 +46,7 @@ function HomeForm({ show, onHide, onVentaAdded, isLoading, setIsLoading }) {
     try {
       const config = {
         method: 'post',
-        url: 'http://localhost:8080/api/ventas/nueva',
+        url: 'https://gmm0ermcb9.execute-api.us-east-1.amazonaws.com/api/ventas/nueva',
         headers: {
           'Content-Type': 'application/json'
         },
