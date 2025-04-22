@@ -48,8 +48,12 @@ export default function Form() {
             // Set token as default Authorization header for future requests
             axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
 
-            // Navigate to home page after successful login
-            navigate('/home');
+            await fetch("https://gmm0ermcb9.execute-api.us-east-1.amazonaws.com/api/ping");
+    
+            // Esperar un segundo para asegurarse de que todo está listo
+            setTimeout(() => {
+                navigate("/ventas"); // Redirigir a la ruta de ventas
+            }, 1000);
 
         } catch (error) {
             console.error("Login error:", error);
