@@ -2,7 +2,7 @@
 
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8080';
+const API_URL = 'https://gmm0ermcb9.execute-api.us-east-1.amazonaws.com';
 
 // Configure axios to use the token with every request
 const setupAxiosInterceptors = (token) => {
